@@ -1,103 +1,70 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 
-# 1. تنظیمات اولیه برای ظاهر اپلیکیشن موبایل
-st.set_page_config(page_title="Solico Analytics", layout="centered")
+# 1. تنظیمات ظاهری برای حل مشکل فونت و رنگ
+st.set_page_config(page_title="Market Leader Dashboard", layout="wide")
 
-# 2. تزریق CSS پیشرفته برای شبیه‌سازی اپلیکیشن حرفه‌ای
 st.markdown("""
     <style>
     @import url('https://v1.fontapi.ir/css/Vazir');
+    * { font-family: 'Vazir', sans-serif; direction: rtl; }
+    .stApp { background-color: #0e1117; } /* پس‌زمینه تیره */
     
-    * { font-family: 'Vazir', sans-serif; }
-    .stApp { background-color: #0e1117; color: white; }
+    /* اصلاح رنگ فونت‌ها برای دیده شدن در تم تیره */
+    h1, h2, h3, p, span, label { color: #e2e8f0 !important; }
     
-    /* استایل کارت‌های KPI */
-    .metric-card {
+    /* کارت‌های شاخص حرفه‌ای */
+    .leader-card {
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        border: 1px solid #334155;
-        border-radius: 15px;
+        border-left: 5px solid #38bdf8;
         padding: 20px;
-        text-align: center;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
     }
-    .metric-value { font-size: 28px; font-weight: 800; color: #38bdf8; }
-    .metric-label { font-size: 12px; color: #94a3b8; margin-bottom: 5px; }
-    
-    /* استایل بخش جستجو */
-    .stTextInput input {
-        background-color: #1e293b !format;
-        border-radius: 10px !important;
-        border: 1px solid #38bdf8 !important;
-        color: white !important;
-    }
+    .leader-title { color: #38bdf8; font-size: 14px; margin-bottom: 10px; }
+    .leader-name { font-size: 24px; font-weight: bold; color: white; }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. دیتای فرضی محصولات (قابل اتصال به دیتابیس شما)
+# 2. دیتای محصول (سس مایونز به عنوان نمونه)
 data = {
-    "برند": ["کاله", "مهرام", "بیژن", "بهروز", "سولیکو"],
-    "سهم_بازار": [45, 25, 15, 10, 5],
-    "رشد": [12.4, -2.1, 5.8, 8.2, 1.5],
-    "تنوع": [120, 85, 45, 60, 30],
-    "امتیاز": [4.8, 4.5, 4.2, 4.3, 4.9]
+    "برند": ["کاله", "مهرام", "بیژن", "بهروز", "تبرک"],
+    "سهم_بازار": [38, 28, 15, 12, 7],
+    "محبوبیت_مجازی": [85000, 62000, 41000, 30000, 12000], # فالوور/تعامل
+    "شهر_پیشرو": ["تهران", "اصفهان", "مشهد", "شیراز", "تبریز"],
+    "مارکت_اصلی": ["هایپرمارکت", "فروشگاه زنجیره‌ای", "خرده‌فروشی", "آنلاین", "عمده‌فروشی"]
 }
 df = pd.DataFrame(data)
 
-# --- شروع طراحی بصری ---
+# 3. بخش جستجو
+st.title("🔍 سامانه تحلیل هوشمند بازار")
+search_item = st.text_input("نام محصول را وارد کنید (مثلاً: سس مایونز)", "سس مایونز")
 
-# هدر اپلیکیشن شبیه دیجی‌کالا
-col_h1, col_h2 = st.columns([1, 4])
-with col_h1:
-    st.image("https://cdn-icons-png.flaticon.com/512/3502/3502688.png", width=50) # لوگوی فرضی
-with col_h2:
-    st.markdown("<h2 style='margin-top:0;'>پنل مدیریتی سولیکو</h2>", unsafe_allow_html=True)
+if search_item:
+    st.markdown(f"### گزارش وضعیت بازار: {search_item}")
+    
+    # ردیف اول: لیدرهای بازار
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        leader = df.iloc[df['سهم_بازار'].idxmax()]
+        st.markdown(f"""<div class="leader-card">
+            <div class="leader-title">🏆 لیدر فعلی بازار</div>
+            <div class="leader-name">{leader['برند']}</div>
+            <div style="color:#10b981">سهم بازار: {leader['سهم_بازار']}٪</div>
+        </div>""", unsafe_allow_html=True)
+        
+    with col2:
+        social_star = df.iloc[df['محبوبیت_مجازی'].idxmax()]
+        st.markdown(f"""<div class="leader-card" style="border-left-color: #f472b6">
+            <div class="leader-title">📱 محبوب شبکه‌های اجتماعی</div>
+            <div class="leader-name">{social_star['برند']}</div>
+            <div style="color:#f472b6">{social_star['محبوبیت_مجازی']:,} تعامل</div>
+        </div>""", unsafe_allow_html=True)
 
-# بخش جستجوی هوشمند (Input کاربر)
-search_query = st.text_input("🔍 جستجوی محصول یا برند (مثلاً: کاله)...", "")
-
-# فیلتر کردن دیتا بر اساس جستجو
-filtered_df = df[df['برند'].str.contains(search_query)] if search_query else df
-
-# نمایش کارت‌های شاخص (KPIs)
-st.markdown("### شاخص‌های کلیدی")
-c1, c2 = st.columns(2)
-with c1:
-    st.markdown(f"""<div class='metric-card'>
-        <div class='metric-label'>میانگین رضایت</div>
-        <div class='metric-value'>⭐ {filtered_df['امتیاز'].mean():.1f}</div>
-    </div>""", unsafe_allow_html=True)
-with c2:
-    st.markdown(f"""<div class='metric-card'>
-        <div class='metric-label'>تنوع سبد کالایی</div>
-        <div class='metric-value'>{filtered_df['تنوع'].sum()}</div>
-    </div>""", unsafe_allow_html=True)
-
-st.write("---")
-
-# نمایش نمودار راداری یا میله‌ای (شبیه تصویر Power BI)
-st.markdown("### تحلیل بصری عملکرد")
-if not filtered_df.empty:
-    fig = px.bar(
-        filtered_df, x='برند', y='سهم_بازار', 
-        color='رشد', template="plotly_dark",
-        color_continuous_scale='Tealgrn'
-    )
-    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-    st.plotly_chart(fig, use_container_width=True)
-
-# جدول جزئیات با استایل تمیز
-st.markdown("### لیست جزئیات محصولات")
-st.dataframe(filtered_df.style.highlight_max(axis=0, color='#1e3a8a'))
-
-# فوتر اپلیکیشن (Navigation Bar شبیه‌سازی شده)
-st.markdown("""
-    <div style="position: fixed; bottom: 0; left: 0; width: 100%; background: #1e293b; padding: 10px; display: flex; justify-content: space-around; border-top: 1px solid #334155;">
-        <span style="font-size:20px;">🏠</span>
-        <span style="font-size:20px;">📊</span>
-        <span style="font-size:20px;">👤</span>
-    </div>
-    <br><br>
-""", unsafe_allow_html=True)
+    with col3:
+        top_city = df.iloc[0] # فرض بر برند اول
+        st.markdown(f"""<div class="leader-card" style="border-left-color: #fbbf24">
+            <div class="leader-title">📍 شهر و
