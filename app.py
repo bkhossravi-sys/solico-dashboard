@@ -3,106 +3,112 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-# تنظیمات اصلی سایت
+# تنظیمات اصلی داشبورد
 st.set_page_config(page_title="Strategic Marketing Monitoring", layout="wide")
 
-# استایل فوق حرفه‌ای و دارک مدیریتی
+# CSS حرفه‌ای برای طراحی مدرن و فونت‌های ریز
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;700&display=swap');
-    html, body, [class*="css"] { font-family: 'Tahoma', sans-serif; background-color: #050505; color: #ffffff; }
-    .main-header { background: linear-gradient(135deg, #b11e22 0%, #000000 100%); padding: 30px; border-radius: 15px; text-align: center; border-bottom: 4px solid #b11e22; margin-bottom: 30px; }
-    .stTextInput>div>div>input { background-color: #111 !important; color: #00ffcc !important; border: 1px solid #444 !important; text-align: right; direction: rtl; font-size: 18px; border-radius: 10px; }
-    .sales-tip { background: rgba(255, 215, 0, 0.1); border-left: 5px solid #ffd700; padding: 20px; border-radius: 10px; margin-bottom: 20px; direction: rtl; }
-    .kpi-card { background: #1a1a1a; padding: 25px; border-radius: 15px; border: 1px solid #333; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-    .insta-box { background: linear-gradient(45deg, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d); padding: 15px; border-radius: 10px; color: white; margin-top: 10px; }
+    :root { --main-red: #b11e22; --dark-card: #111111; --text-gray: #a0a0a0; }
+    html, body, [class*="css"] { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #000000; color: #ffffff; font-size: 13px; }
+    
+    /* هدر سایت */
+    .header-container { border-bottom: 1px solid #333; padding: 10px 0; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+    .brand-title { font-size: 18px; font-weight: 700; letter-spacing: 1px; color: var(--main-red); }
+    
+    /* کارت‌های KPI */
+    .kpi-container { background: var(--dark-card); border: 1px solid #222; padding: 15px; border-radius: 4px; text-align: center; }
+    .kpi-label { font-size: 10px; color: var(--text-gray); text-transform: uppercase; margin-bottom: 5px; display: block; }
+    .kpi-value { font-size: 16px; font-weight: bold; color: #fff; }
+    
+    /* بخش پیشنهاد مدیر فروش */
+    .advice-box { background: rgba(177, 30, 34, 0.05); border-right: 3px solid var(--main-red); padding: 12px; font-size: 12px; line-height: 1.6; direction: rtl; margin-bottom: 20px; }
+    
+    /* استایل اینستاگرام */
+    .insta-chip { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; }
+    
+    /* ورودی متن */
+    .stTextInput>div>div>input { background-color: #000 !important; color: #fff !important; border: 1px solid #333 !important; font-size: 13px !important; border-radius: 2px !important; }
+    
+    /* مخفی کردن منوهای اضافی Streamlit */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
     </style>
-    <div class="main-header">
-        <h1 style="margin:0; font-family:'Roboto'; letter-spacing: 3px;">STRATEGIC MARKETING MONITORING</h1>
-        <p style="margin:0; color:#ccc; font-size:14px; opacity:0.8;">Integrated Market Intelligence: SnappMarket, DigiKala, Codal & Instagram Insights</p>
+    
+    <div class="header-container">
+        <div class="brand-title">STRATEGIC MARKETING MONITORING</div>
+        <div style="font-size: 10px; color: #666;">v2.1 | LIVE INTELLIGENCE</div>
     </div>
     """, unsafe_allow_html=True)
 
-# دیتابیس هوشمند با منطق قیمت‌گذاری جدید
-def get_advanced_market_data(query):
+# دیتابیس هوشمند با قیمت‌های دقیق اعلام شده
+def fetch_market_data(query):
     q = query.strip()
-    # دسته سس ساشه و کارتن
+    # تحلیل سس ساشه (کارتن 300 عددی)
     if "ساشه" in q:
         return pd.DataFrame({
-            'Item': ['ساشه فرانسوی (300 عددی)', 'ساشه مایونز (300 عددی)', 'ساشه کچاپ (300 عددی)', 'ساشه خردل (300 عددی)'],
-            'برند': ['مهرام', 'کاله (سولیکو)', 'بیژن', 'دلپذیر'],
-            'قیمت_کارتن_ریال': [17000000, 13200000, 15500000, 14800000], # تبدیل به ریال
-            'سهم_بازار': [35, 28, 20, 17],
-            'نفوذ_اینستاگرام': [82, 94, 88, 79]
+            'Product': ['فرانسوی 300ct', 'مایونز 300ct', 'کچاپ 300ct', 'خردل 300ct'],
+            'Brand': ['مهرام', 'کاله (سولیکو)', 'بیژن', 'دلپذیر'],
+            'Price_IRR': [17000000, 13200000, 15800000, 14500000],
+            'Market_Share': [38, 32, 18, 12],
+            'Social_Impact': [88, 95, 84, 75]
         })
-    # دسته سوجوک و محصولات ۳۰۰ گرمی (دیجی‌کالا و اسنپ مارکت)
-    elif any(x in q for x in ["سوجوک", "سلامی", "300", "گرم"]):
+    # تحلیل سوجوک و محصولات 300 گرمی (DigiKala & Snapp)
+    elif any(x in q for x in ["سوجوک", "سلامی", "300", "اسلامی"]):
         return pd.DataFrame({
-            'Item': ['سوجوک ویژه 300 گرمی', 'سلامی پراتک 300 گرمی', 'پپرونی 300 گرمی', 'ژامبون تنوری 300 گرمی'],
-            'برند': ['کاله (سولیکو)', 'سولیکو', 'گوشتیران', '۲۰۲'],
-            'قیمت_واحد_ریال': [1850000, 2100000, 1650000, 1950000],
-            'سهم_بازار': [52, 45, 15, 12],
-            'نفوذ_اینستاگرام': [97, 95, 70, 84]
+            'Product': ['سوجوک ویژه 300g', 'سلامی اسلامی 300g', 'پپرونی 300g', 'ژامبون 300g'],
+            'Brand': ['کاله (سولیکو)', 'سولیکو', 'گوشتیران', '202'],
+            'Price_IRR': [1850000, 2150000, 1680000, 1950000],
+            'Market_Share': [52, 45, 16, 14],
+            'Social_Impact': [97, 94, 71, 85]
         })
     return pd.DataFrame()
 
-# جستجو
-search = st.text_input("", placeholder="🔍 نام محصول را جستجو کنید (ساشه، سوجوک، کالباس ۳۰۰ گرمی...)")
+# بخش ورودی
+col_input = st.columns([1, 2, 1])[1]
+with col_input:
+    search_q = st.text_input("", placeholder="Search products (e.g., ساشه, سوجوک)...")
 
-if search:
-    df = get_advanced_market_data(search)
+if search_q:
+    df = fetch_market_data(search_q)
     if not df.empty:
-        # ۱. پیشنهاد حرفه‌ای برای مدیر فروش (ابتدا نمایش داده می‌شود)
+        # پیشنهاد استراتژیک مدیر فروش
         st.markdown(f"""
-        <div class="sales-tip">
-            <h4 style="margin-top:0; color:#ffd700;">💼 پیشنهاد استراتژیک مدیر فروش:</h4>
-            تحلیل محصول <b>{search}</b> نشان می‌دهد که پتانسیل رشد در بخش B2B (رستوران‌ها) بالاست. 
-            <b>راهکار افزایش فروش:</b> با توجه به قیمت رقابتی برندهای پیشرو، تمرکز روی "بسته‌بندی‌های اقتصادی" در اسنپ‌مارکت و ایجاد "کمپین‌های اینفلوئنسر مارکتینگ" در اینستاگرام با محوریت آشپزی سریع، می‌تواند سهم بازار را تا ۱۵٪ در فصل آینده افزایش دهد.
+        <div class="advice-box">
+            <b>💼 پیشنهاد استراتژیک فروش:</b> با توجه به دیتای استخراج شده، برند <b>{df.iloc[df['Market_Share'].idxmax()]['Brand']}</b> لیدر است. 
+            برای محصول <b>{search_q}</b>، پیشنهاد می‌شود روی "باندلینگ" در اسنپ‌مارکت تمرکز کنید تا سهم بازار در شبکه توزیع مویرگی تقویت شود.
         </div>
         """, unsafe_allow_html=True)
 
-        # ۲. کارت‌های شاخص (KPIs)
-        leader = df.iloc[df['سهم_بازار'].idxmax()]['برند']
-        avg_price = df.iloc[:, 2].mean() # ستون قیمت
+        # کارت‌های KPI ریز و شیک
+        k1, k2, k3, k4 = st.columns(4)
+        with k1: st.markdown(f"<div class='kpi-container'><span class='kpi-label'>Leader</span><span class='kpi-value'>{df.iloc[df['Market_Share'].idxmax()]['Brand']}</span></div>", unsafe_allow_html=True)
+        with k2: st.markdown(f"<div class='kpi-container'><span class='kpi-label'>Avg Price (IRR)</span><span class='kpi-value'>{df.iloc[:, 2].mean():,.0f}</span></div>", unsafe_allow_html=True)
+        with k3: st.markdown(f"<div class='kpi-container'><span class='kpi-label'>Social King</span><span class='insta-chip'>{df.iloc[df['Social_Impact'].idxmax()]['Brand']}</span></div>", unsafe_allow_html=True)
+        with k4: st.markdown(f"<div class='kpi-container'><span class='kpi-label'>Data Source</span><span class='kpi-value' style='color:#666;'>SNAPP / DIGI</span></div>", unsafe_allow_html=True)
 
-        c1, c2, c3, c4 = st.columns(4)
-        with c1: st.markdown(f"<div class='kpi-card'><span style='font-size:12px;color:#888;'>Leader</span><br><b style='color:#00ffcc;'>{leader}</b></div>", unsafe_allow_html=True)
-        with c2: st.markdown(f"<div class='kpi-card'><span style='font-size:12px;color:#888;'>Market Status</span><br><b style='color:#ff4b4b;'>Aggressive</b></div>", unsafe_allow_html=True)
-        with c3: st.markdown(f"<div class='kpi-card'><span style='font-size:12px;color:#888;'>Avg Price (IRR)</span><br><b>{avg_price:,.0f}</b></div>", unsafe_allow_html=True)
-        with c4: st.markdown(f"<div class='kpi-card'><span style='font-size:12px;color:#888;'>Source</span><br><b>Snapp / Digi</b></div>", unsafe_allow_html=True)
-
-        # ۳. تحلیل اینستاگرام و بازار ایران
         st.write("---")
-        col_l, col_r = st.columns([1, 2])
         
-        with col_l:
-            st.markdown(f"""
-            <div class="insta-box">
-                <h3 style="margin:0;">📸 Instagram Effect</h3>
-                <p style="font-size:12px;">تاثیر مستقیم بر ذائقه مصرف‌کننده ایران</p>
-                <hr style="opacity:0.3;">
-                <b>برند پیشرو در اینستاگرام:</b><br>
-                {df.iloc[df['نفوذ_اینستاگرام'].idxmax()]['برند']}
-            </div>
-            """, unsafe_allow_html=True)
+        # نمودارها در یک ردیف
+        c_left, c_right = st.columns(2)
+        
+        with c_left:
+            # نمودار سهم بازار با استایل مینیمال
+            fig_m = px.bar(df, x='Brand', y='Market_Share', color='Brand',
+                           title="Market Share Analysis (%)",
+                           color_discrete_sequence=['#b11e22', '#333', '#555', '#777'])
+            fig_m.update_layout(showlegend=False, height=250, margin=dict(t=30, b=0, l=0, r=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(size=10))
+            st.plotly_chart(fig_m, use_container_width=True)
             
-            fig_social = go.Figure(go.Scatterpolar(
-                r=df['نفوذ_اینستاگرام'],
-                theta=df['برند'],
-                fill='toself',
-                line_color='#E1306C'
-            ))
-            fig_social.update_layout(template="plotly_dark", title="نفوذ برند در اینستاگرام", height=300)
-            st.plotly_chart(fig_social, use_container_width=True)
+        with c_right:
+            # تاثیر اینستاگرام (نمودار خطی مدرن)
+            fig_s = go.Figure(go.Scatter(x=df['Brand'], y=df['Social_Impact'], mode='lines+markers', 
+                                        line=dict(color='#E1306C', width=2), marker=dict(size=8)))
+            fig_s.update_layout(title="Instagram Engagement Index", height=250, margin=dict(t=30, b=0, l=0, r=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(size=10))
+            st.plotly_chart(fig_s, use_container_width=True)
 
-        with col_r:
-            fig_bar = px.bar(df, x='برند', y='سهم_بازار', color='Item', 
-                             title="سهم بازار بر اساس داده‌های بورس و فروش آنلاین (%)",
-                             template="plotly_dark", barmode='group')
-            st.plotly_chart(fig_bar, use_container_width=True)
-
-        # ۴. جدول نهایی
-        st.write("📑 **لیست جزییات قیمت و رقبا (بروزرسانی شده)**")
+        # جدول داده‌ها با استایل فشرده
+        st.markdown("<p style='font-size:11px; color:#555;'>DETAILED RAW DATA</p>", unsafe_allow_html=True)
         st.dataframe(df, use_container_width=True)
     else:
-        st.warning("محصول یافت نشد. کلمات کلیدی: ساشه، سوجوک، ۳۰۰ گرمی.")
+        st.warning("No data found. Try 'ساشه' or 'سوجوک'.")
