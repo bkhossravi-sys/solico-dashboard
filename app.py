@@ -3,33 +3,62 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-# تنظیمات اصلی صفحه برای حالت موبایل و دسکتاپ
-st.set_page_config(page_title="Solico Market Intelligence", layout="wide")
+# تنظیمات اصلی صفحه
+st.set_page_config(page_title="Solico Super App", layout="wide")
 
-# استایل فوق حرفه‌ای ترکیبی از Power BI و Digikala
+# استایل اختصاصی ترکیبی دیجی‌کالا و پاور بی‌آی
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn&display=swap');
-    html, body, [class*="css"] { font-family: 'Vazirmatn', sans-serif; background-color: #0d1117; color: #e6edf3; }
+    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;400;700&display=swap');
     
-    /* هدر سایت با ایمیل کاربر */
-    .top-bar { background: #161b22; padding: 10px; border-bottom: 2px solid #ef394e; text-align: center; margin-bottom: 20px; }
-    .user-email { color: #8b949e; font-size: 12px; letter-spacing: 1px; }
-    
-    /* کارت‌های مشابه Power BI */
-    .metric-card { background: #1c2128; border-radius: 12px; padding: 20px; border: 1px solid #30363d; box-shadow: 0 4px 15px rgba(0,0,0,0.3); text-align: center; }
-    .strategy-box { background: rgba(239, 57, 78, 0.1); border-right: 5px solid #ef394e; padding: 20px; border-radius: 8px; direction: rtl; margin-bottom: 25px; line-height: 1.8; }
-    
-    /* استایل اینپوت جستجو */
-    .stTextInput>div>div>input { border-radius: 30px !important; border: 1px solid #ef394e !important; background: #0d1117 !important; color: #fff !important; text-align: center; height: 50px; }
-    
-    /* دایره‌های دسته‌بندی دیجی‌کالا */
-    .cat-circle { background: #fff; border-radius: 50%; width: 55px; height: 55px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 2px solid #ef394e; }
+    html, body, [class*="css"] {
+        font-family: 'Vazirmatn', sans-serif;
+        background-color: #f8f8f8;
+        direction: rtl;
+    }
+
+    /* هدر قرمز دیجی کالا */
+    .dk-header {
+        background-color: #ef394e;
+        padding: 15px;
+        color: white;
+        text-align: center;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .user-mail { font-size: 11px; opacity: 0.9; font-weight: 100; letter-spacing: 1px; }
+
+    /* کارت‌های شاخص‌های کلیدی (Metrics) */
+    .metric-container {
+        background: white;
+        border-radius: 15px;
+        padding: 15px;
+        border: 1px solid #e0e0e0;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    /* استایل فونت‌های پایین صفحه - خوانایی حداکثری */
+    .brand-title { color: #ef394e; font-weight: 700; font-size: 18px; margin-bottom: 10px; }
+    .info-label { color: #5a5a5a; font-size: 14px; font-weight: 400; }
+    .info-value { color: #1a1a1a; font-size: 15px; font-weight: 700; display: block; margin-bottom: 8px; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px;}
+
+    /* دسته‌بندی دایره‌ای */
+    .cat-item { text-align: center; margin-bottom: 20px; }
+    .cat-circle {
+        width: 60px; height: 60px; 
+        background: white; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        font-size: 25px; border: 2px solid #ef394e;
+    }
     </style>
-    
-    <div class="top-bar">
-        <span style="color:#ef394e; font-weight:bold; font-size:18px;">SOLICO MARKET INTELLIGENCE</span><br>
-        <span class="user-email">By: behr.khosravi@solico-group.ir</span>
+
+    <div class="dk-header">
+        <div style="font-size: 20px; font-weight: 700;">SOLICO GROUP INTELLIGENCE</div>
+        <div class="user-email">By: behr.khosravi@solico-group.ir</div>
+        <div style="margin-top:10px; font-size:12px;">📍 انتخاب منطقه: سراسر ایران</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -41,105 +70,100 @@ BRAND_LOGOS = {
     "دلپذیر": "https://delpazir.com/wp-content/themes/delpazir/assets/images/logo.png",
     "آندره": "https://andrefood.com/wp-content/uploads/2021/03/Andre-Logo-1.png",
     "۲۰۲": "https://202.ir/wp-content/uploads/2021/05/logo.png",
-    "طبیعت": "https://tabiat.ir/wp-content/uploads/2020/06/logo.png",
-    "تحفه": "https://tofeh.com/wp-content/uploads/2020/05/logo.png"
+    "طبیعت": "https://tabiat.ir/wp-content/uploads/2020/06/logo.png"
 }
 
-def fetch_market_data(query):
+def get_data(query):
     q = query.strip()
-    # تحلیل سس‌ها
-    if any(x in q for x in ["سس", "مایونز", "کچاپ", "خردل"]):
+    if any(x in q for x in ["سس", "مایونز", "کچاپ"]):
         data = [
-            {'Brand': 'مهرام', 'Share': 34, 'Lead': 'تهران', 'B2B': 'بسیار قوی', 'B2W': 'فعال', 'Type': 'Retail/HoReCa'},
-            {'Brand': 'دلپذیر', 'Share': 31, 'Lead': 'سراسری', 'B2B': 'متوسط', 'B2W': 'بسیار قوی', 'Type': 'Mass Market'},
-            {'Brand': 'بیژن', 'Share': 18, 'Lead': 'غرب', 'B2B': 'فعال', 'B2W': 'متوسط', 'Type': 'Retail'},
-            {'Brand': 'سولیکو (کاله)', 'Share': 17, 'Lead': 'شمال', 'B2B': 'قوی', 'B2W': 'فعال', 'Type': 'Premium'}
+            {'Brand': 'مهرام', 'Share': 34, 'City': 'تهران', 'B2B': 'بسیار فعال', 'B2W': 'توزیع مویرگی', 'Target': 'رستوران‌ها'},
+            {'Brand': 'دلپذیر', 'Share': 31, 'City': 'مشهد', 'B2B': 'متوسط', 'B2W': 'بنکداری قوی', 'Target': 'هایپرمارکت'},
+            {'Brand': 'کاله', 'Share': 20, 'City': 'آمل/شمال', 'B2B': 'تخصصی', 'B2W': 'سیستمی', 'Target': 'خرده‌فروشی'}
         ]
-        strat = "تقویت زنجیره تأمین در بخش B2W (بنکداری) شهرهای مشهد و تبریز جهت کاهش سهم رقبای سنتی."
-    
-    # تحلیل پروتئینی (سوسیس و کالباس)
-    elif any(x in q for x in ["سوسیس", "کالباس", "سوجوک", "ژامبون", "آندره", "گوشت"]):
+        strat = "تمرکز بر سس‌های تک‌نفره برای بخش B2B (فست‌فودها)."
+    elif any(x in q for x in ["سوسیس", "کالباس", "سوجوک", "پروتئین"]):
         data = [
-            {'Brand': 'سولیکو (کاله)', 'Share': 42, 'Lead': 'سراسری', 'B2B': 'بسیار قوی', 'B2W': 'سیستمی', 'Type': 'Supermarket'},
-            {'Brand': 'آندره', 'Share': 24, 'Lead': 'تهران (مرکز)', 'B2B': 'HoReCa', 'B2W': 'متوسط', 'Type': 'Delicatessen'},
-            {'Brand': '۲۰۲', 'Share': 19, 'Lead': 'البرز', 'B2B': 'فعال', 'B2W': 'قوی', 'Type': 'Chain Stores'},
-            {'Brand': 'گوشتیران', 'Share': 15, 'Lead': 'مرکز', 'B2B': 'سازمانی', 'B2W': 'قوی', 'Type': 'Wholesale'}
+            {'Brand': 'سولیکو (کاله)', 'Share': 45, 'City': 'کشوری', 'B2B': 'حاکم بازار', 'B2W': 'هوشمند', 'Target': 'همه کانال‌ها'},
+            {'Brand': 'آندره', 'Share': 25, 'City': 'تهران', 'B2B': 'لوکس/هتل', 'B2W': 'محدود', 'Target': 'پروتئینی‌ها'},
+            {'Brand': '۲۰۲', 'Share': 15, 'City': 'کرج', 'B2B': 'فعال', 'B2W': 'قوی', 'Target': 'فروشگاهی'}
         ]
-        strat = "توسعه خط تولید سوجوک و محصولات تخصصی برای تسلط بر بخش B2B رستوران‌های کژوال تهران."
-    
-    # تحلیل تن ماهی و زیتون
+        strat = "توسعه سوجوک و محصولات تخصصی برای تمایز در بازار B2B."
     elif any(x in q for x in ["تن", "ماهی", "زیتون"]):
         data = [
-            {'Brand': 'طبیعت', 'Share': 36, 'Lead': 'سراسری', 'B2B': 'سازمانی', 'B2W': 'بسیار قوی', 'Type': 'Hypermarket'},
-            {'Brand': 'تحفه', 'Share': 29, 'Lead': 'جنوب/تهران', 'B2B': 'تخصصی', 'B2W': 'قوی', 'Type': 'Health Focus'},
-            {'Brand': 'شیلتون', 'Share': 20, 'Lead': 'مرکز', 'B2B': 'متوسط', 'B2W': 'فعال', 'Type': 'Retail'}
+            {'Brand': 'طبیعت', 'Share': 38, 'City': 'سراسری', 'B2B': 'سازمانی', 'B2W': 'بسیار قوی', 'Target': 'عمده فروشی'},
+            {'Brand': 'تحفه', 'Share': 30, 'City': 'جنوب', 'B2B': 'صادراتی', 'B2W': 'فعال', 'Target': 'فروشگاه زنجیره‌ای'}
         ]
-        strat = "استفاده از مدل فروش B2B برای قراردادهای تأمین غذای ارگان‌ها و بهبود توزیع در فروشگاه‌های زنجیره‌ای."
-    else:
-        return None, None
+        strat = "افزایش تنوع در بسته‌بندی‌های زیتون برای لاین کترینگ و هتل‌ها."
+    else: return None, None
     return pd.DataFrame(data), strat
 
-# ردیف آیکون‌های دسته‌بندی (Style Digikala)
-st.write(" ")
-c_cat = st.columns(5)
-cats = [("سس", "🥫"), ("گوشتی", "🥩"), ("کنسرو", "🐟"), ("زیتون", "🫒"), ("لبنیات", "🥛")]
-for i, (n, ico) in enumerate(cats):
-    with c_cat[i]:
-        st.markdown(f'<div class="cat-circle">{ico}</div><p style="text-align:center;font-size:10px;margin-top:5px;">{n}</p>', unsafe_allow_html=True)
+# ردیف آیکون‌های دسته‌بندی (دقیقاً مثل اپ دیجی‌کالا)
+cols_cat = st.columns(5)
+categories = [("سس", "🥫"), ("گوشتی", "🥩"), ("کنسرو", "🐟"), ("زیتون", "🫒"), ("لبنیات", "🥛")]
+for i, (name, icon) in enumerate(categories):
+    with cols_cat[i]:
+        st.markdown(f'<div class="cat-item"><div class="cat-circle">{icon}</div><div style="font-size:12px;margin-top:5px;font-weight:bold;color:#444;">{name}</div></div>', unsafe_allow_html=True)
 
-# فیلد جستجو
-search = st.text_input("", placeholder="نام محصول را برای تحلیل هوشمند وارد کنید...")
+# جستجو با استایل گرد
+search_q = st.text_input("", placeholder="🔍 جستجو در تمامی محصولات سولیکو و رقبا...")
 
-if search:
-    df, strategy_text = fetch_market_data(search)
-    
+if search_q:
+    df, strategy = get_data(search_q)
     if df is not None:
-        # کارت استراتژی (Hero Section)
+        # کارت شگفت‌انگیز (لیدر بازار)
         st.markdown(f"""
-        <div class="strategy-box">
-            <h4 style="color:#ef394e; margin-bottom:10px;">💡 استراتژی افزایش سهم بازار {search}:</h4>
-            {strategy_text}
+        <div style="background:#ef394e; color:white; padding:15px; border-radius:15px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <span style="font-size:18px; font-weight:bold;">🏆 لیدر فعلی بازار: {df.iloc[0]['Brand']}</span><br>
+                <span style="font-size:12px;">{strategy}</span>
+            </div>
+            <img src="{BRAND_LOGOS.get(df.iloc[0]['Brand'])}" width="60" style="background:white; border-radius:10px; padding:5px;">
         </div>
         """, unsafe_allow_html=True)
 
-        # ردیف نمودارهای Power BI
-        st.write("### 📊 Metrics Dashboard")
-        m1, m2, m3 = st.columns([2, 1, 1])
-        
-        with m1:
-            fig1 = px.bar(df, x='Brand', y='Share', color='Share', text='Share', 
-                          color_continuous_scale=['#444', '#ef394e'], title="سهم بازار (%)")
-            fig1.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#fff", height=300)
-            st.plotly_chart(fig1, use_container_width=True)
-            
-        with m2:
-            fig2 = px.pie(df, values='Share', names='Brand', hole=0.7, color_discrete_sequence=['#ef394e', '#555', '#888', '#aaa'])
-            fig2.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=300)
+        # بخش نمودارها (Power BI Style)
+        st.write("### 📊 تحلیل دیتامحور (Data Analytics)")
+        c1, c2 = st.columns([1, 1])
+        with c1:
+            fig = px.pie(df, values='Share', names='Brand', hole=0.6, color_discrete_sequence=['#ef394e', '#333', '#888'])
+            fig.update_layout(showlegend=False, height=250, margin=dict(t=0, b=0, l=0, r=0))
+            st.plotly_chart(fig, use_container_width=True)
+                    with c2:
+            fig2 = px.bar(df, x='Brand', y='Share', color='Brand', color_discrete_sequence=['#ef394e'])
+            fig2.update_layout(showlegend=False, height=250, plot_bgcolor='rgba(0,0,0,0)')
             st.plotly_chart(fig2, use_container_width=True)
             
-        with m3:
-            fig3 = go.Figure(go.Scatterpolar(r=[80, 70, 90, 60], theta=['B2B', 'B2W', 'Retail', 'Online'], fill='toself', fillcolor='rgba(239, 57, 78, 0.3)', line_color='#ef394e'))
-            fig3.update_layout(polar=dict(bgcolor='#161b22', radialaxis=dict(visible=False)), height=300, margin=dict(t=40, b=20), title="Channel Strength")
-            st.plotly_chart(fig3, use_container_width=True)
-            
-        # کارت‌های شناسنامه برند با لوگو
+        # بخش اطلاعات تفصیلی (خوانایی اصلاح شده)
         st.write("---")
-        st.write("### 🏢 Brand Operational ID")
-        cols = st.columns(len(df))
+        st.write("### 🏢 جزئیات عملیاتی و کانال‌های فروش")
+        
+        # نمایش کارت‌ها
+        card_cols = st.columns(len(df))
         for i, row in df.iterrows():
-            with cols[i]:
-                logo = BRAND_LOGOS.get(row['Brand'], "https://via.placeholder.com/100")
+            with card_cols[i]:
+                logo_url = BRAND_LOGOS.get(row['Brand'], "https://via.placeholder.com/100")
                 st.markdown(f"""
-                <div class="metric-card">
-                    <img src="{logo}" width="60" style="margin-bottom:10px;">
-                    <h5 style="color:#ef394e;">{row['Brand']}</h5>
-                    <p style="font-size:11px; color:#8b949e;">📍 لیدر: {row['Lead']}</p>
-                    <div style="text-align:right; font-size:10px;">
-                        <b>B2B:</b> {row['B2B']}<br>
-                        <b>B2W:</b> {row['B2W']}<br>
-                        <b>Focus:</b> {row['Type']}
+                <div style="background:white; border-radius:15px; padding:20px; border:1px solid #eee; min-height:350px;">
+                    <div style="text-align:center;">
+                        <img src="{logo_url}" width="70" style="margin-bottom:10px;">
+                        <div class="brand-title">{row['Brand']}</div>
+                    </div>
+                    <div style="margin-top:15px;">
+                        <span class="info-label">📍 شهر لیدر:</span>
+                        <span class="info-value">{row['City']}</span>
+                        
+                        <span class="info-label">🏢 وضعیت B2B:</span>
+                        <span class="info-value">{row['B2B']}</span>
+                        
+                        <span class="info-label">🚚 وضعیت B2W:</span>
+                        <span class="info-value">{row['B2W']}</span>
+                        
+                        <span class="info-label">🎯 تمرکز بازار:</span>
+                        <span class="info-value">{row['Target']}</span>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
     else:
-        st.warning("داده‌ای یافت نشد. لطفاً از دسته‌های سس، سوسیس، کالباس، تن ماهی یا زیتون استفاده کنید.")
+        st.error("محصولی یافت نشد. (سس، سوسیس، تن ماهی یا زیتون را امتحان کنید)")
+
