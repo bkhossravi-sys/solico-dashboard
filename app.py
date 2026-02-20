@@ -93,4 +93,42 @@ if search:
     
     with row1_c1:
         # 1. نمودار لیدر (Bar ساده و متمرکز)
-        fig1 = px.bar(df.head(3), x='Brand', y='MarketShare', title="🏆 Top 3 Leaders",
+        fig1 = px.bar(df.head(3), x='Brand', y='MarketShare', title="🏆 Top 3 Leaders", 
+                     color='MarketShare', color_continuous_scale='Reds')
+        fig1.update_layout(height=200, showlegend=False, margin=dict(l=0,r=0,t=30,b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(size=9))
+        st.plotly_chart(fig1, use_container_width=True)
+        
+    with row1_c2:
+        # 2. سهم بازار (Donut Chart)
+        fig2 = px.pie(df, values='MarketShare', names='Brand', hole=0.6, title="📈 Total Share")
+        fig2.update_layout(height=200, margin=dict(l=0,r=0,t=30,b=0), showlegend=False, paper_bgcolor='rgba(0,0,0,0)', font=dict(size=9))
+        fig2.update_traces(textinfo='percent+label')
+        st.plotly_chart(fig2, use_container_width=True)
+        
+    with row1_c3:
+        # 3. محبوبیت نزد مردم (Gauge یا Funnel)
+        fig3 = px.funnel(df.sort_values('ConsumerLove'), y='Brand', x='ConsumerLove', title="❤️ Consumer Love Index")
+        fig3.update_layout(height=200, margin=dict(l=0,r=0,t=30,b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(size=9))
+        st.plotly_chart(fig3, use_container_width=True)
+        
+    with row1_c4:
+        # 4. بیشترین حضور در اینستاگرام (Radar Chart)
+        fig4 = go.Figure(go.Scatterpolar(r=df['InstaPresence'], theta=df['Brand'], fill='toself', line_color='#E1306C'))
+        fig4.update_layout(polar=dict(bgcolor='rgba(0,0,0,0)', radialaxis=dict(visible=False)), showlegend=False, 
+                          title="📸 Insta Presence", height=200, margin=dict(l=30,r=30,t=40,b=20), paper_bgcolor='rgba(0,0,0,0)', font=dict(size=9))
+        st.plotly_chart(fig4, use_container_width=True)
+        
+    # ردیف سوم: دیتای خام و جزئیات تکنیکال
+    st.write("---")
+    st.markdown("<span style='color:#666; font-size:10px;'>LIVE MARKET FEED: DIGIKALA / SNAPP / CODAL / INSTAGRAM</span>", unsafe_allow_html=True)
+    
+    # نمایش جدول با استایل مالی
+    formatted_df = df.copy()
+    formatted_df['Price'] = formatted_df['Price'].apply(lambda x: f"{x:,} T")
+    st.table(formatted_df)
+
+    # ویجت‌های ریز جانبی برای شلوغ‌تر شدن
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Market Volatility", "Low", "+1.2%")
+    m2.metric("Digital Reach", f"{df['InstaPresence'].mean():.1f}%", "-0.5%")
+    m3.metric("Competitor Aggression", "Medium", "Stable")
