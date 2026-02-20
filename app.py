@@ -4,127 +4,127 @@ import plotly.express as px
 import plotly.graph_objects as go
 import random
 
-# تنظیمات حرفه‌ای صفحه
-st.set_page_config(page_title="Strategic Market Intelligence", layout="wide")
+# تنظیمات صفحه
+st.set_page_config(page_title="Market Intelligence Dashboard", layout="wide")
 
-# CSS برای ظاهر شلوغ و متراکم (Bloomberg Style)
+# استایل اختصاصی مشابه گرافیک دیجی‌کالا (قرمز، سفید، خاکستری روشن)
 st.markdown("""
     <style>
-    html, body, [class*="css"] { font-family: 'Tahoma', sans-serif; background-color: #050505; color: #fff; font-size: 11px; }
-    .stTextInput>div>div>input { background-color: #000 !important; color: #00ffcc !important; border: 1px solid #333 !important; }
-    .header-box { background: linear-gradient(90deg, #800000, #000); padding: 15px; border-bottom: 2px solid #ff0000; text-align: center; margin-bottom: 20px; }
-    .epic-quote { font-size: 15px; font-weight: bold; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
-    .strategy-alert { background: rgba(0, 255, 204, 0.05); border-right: 4px solid #00ffcc; padding: 15px; direction: rtl; line-height: 1.7; margin-bottom: 20px; }
-    .metric-box { background: #111; border: 1px solid #222; padding: 10px; border-radius: 4px; text-align: center; }
+    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn&display=swap');
+    html, body, [class*="css"] { font-family: 'Vazirmatn', sans-serif; background-color: #f8f8f8; color: #444; }
+    .stTextInput>div>div>input { border-radius: 12px !important; border: 1px solid #ef394e !important; height: 45px; font-size: 16px; text-align: center; }
+    .dk-header { background-color: #fff; padding: 10px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: center; margin-bottom: 20px; }
+    .dk-logo { color: #ef394e; font-size: 24px; font-weight: bold; }
+    .category-circle { background: #fff; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin: 0 auto 8px; border: 1px solid #f0f0f0; }
+    .strategy-card { background: #fff; border-radius: 15px; border-right: 6px solid #ef394e; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); direction: rtl; margin-bottom: 25px; }
+    .market-tag { background: #f0f0f0; padding: 4px 12px; border-radius: 20px; font-size: 10px; color: #666; margin-left: 5px; }
+    .leader-tag { background: #fff0f1; color: #ef394e; padding: 2px 10px; border-radius: 5px; font-weight: bold; font-size: 11px; }
     </style>
-    
-    <div class="header-box">
-        <span class="epic-quote">"Leader's Strategy: Optimize the present, invent the future."</span>
-    </div>
+    <div class="dk-header"><span class="dk-logo">MARKET INTELLIGENCE</span></div>
     """, unsafe_allow_html=True)
 
-# دیتابیس منطقی بر اساس تحلیل هوش مصنوعی از بازار ایران
-def get_real_market_data(query):
+# سیستم استعلام هوشمند (شبیه‌ساز هوش مصنوعی برای تحلیل بازار)
+def get_ai_market_intelligence(query):
     q = query.strip()
     
-    # تحلیل بازار سس
+    # دیتابیس منطقی بر اساس تحلیل زنجیره تأمین ایران
     if any(x in q for x in ["سس", "مایونز", "کچاپ"]):
         data = [
-            {'Brand': 'مهرام', 'Share': 31.5, 'Region': 'سراسری', 'Channel': 'سوپرمارکت', 'Love': 94, 'Insta': 88},
-            {'Brand': 'دلپذیر', 'Share': 29.0, 'Region': 'سراسری/جنوب', 'Channel': 'هایپرمارکت', 'Love': 91, 'Insta': 82},
-            {'Brand': 'کاله', 'Share': 14.5, 'Region': 'تهران/شمال', 'Channel': 'فروشگاه زنجیره‌ای', 'Love': 89, 'Insta': 96},
-            {'Brand': 'بیژن', 'Share': 12.0, 'Region': 'غرب/مرکز', 'Channel': 'سوپرمارکت', 'Love': 85, 'Insta': 91},
-            {'Brand': 'بهروز', 'Share': 7.5, 'Region': 'سراسری', 'Channel': 'سنتی', 'Love': 80, 'Insta': 65}
+            {'Brand': 'مهرام', 'Share': 32, 'Lead_Province': 'تهران/البرز', 'Market': 'B2C/Supermarket', 'B2B': 'High', 'B2W': 'Active'},
+            {'Brand': 'دلپذیر', 'Share': 30, 'Region': 'سراسری', 'Market': 'B2C/Hypermarket', 'B2B': 'Medium', 'B2W': 'Strong'},
+            {'Brand': 'کاله', 'Share': 15, 'Region': 'شمال/تهران', 'Market': 'B2C/Chain Stores', 'B2B': 'Strong', 'B2W': 'Active'},
+            {'Brand': 'بیژن', 'Share': 13, 'Region': 'غرب کشور', 'Market': 'B2C/Retail', 'B2B': 'Low', 'B2W': 'Medium'}
         ]
-        price = 145000
+        strategy = "تمرکز بر کمپین‌های 'خرید ترکیبی' با نان‌های صنعتی و افزایش حضور در پلتفرم‌های آنلاین (B2C) برای بازپس‌گیری سهم بازار از لیدرهای سنتی."
     
-    # تحلیل بازار محصولات گوشتی
-    elif any(x in q for x in ["سوسیس", "کالباس", "سوجوک", "آندره", "گوشتی"]):
+    elif any(x in q for x in ["سوسیس", "کالباس", "آندره", "گوشتی", "سوجوک"]):
         data = [
-            {'Brand': 'سولیکو (کاله)', 'Share': 34.0, 'Region': 'سراسری', 'Channel': 'سوپرمارکت/مویرگی', 'Love': 88, 'Insta': 95},
-            {'Brand': 'آندره', 'Share': 21.5, 'Region': 'تهران (مناطق ۱-۳)', 'Channel': 'پروتئینی لوکس', 'Love': 96, 'Insta': 93},
-            {'Brand': '۲۰۲', 'Share': 16.0, 'Region': 'البرز/مرکز', 'Channel': 'زنجیره‌ای', 'Love': 85, 'Insta': 84},
-            {'Brand': 'گوشتیران', 'Share': 13.5, 'Region': 'سراسری', 'Channel': 'عمده‌فروشی', 'Love': 78, 'Insta': 55},
-            {'Brand': 'بشارت', 'Share': 9.0, 'Region': 'شمال‌غرب (تبریز)', 'Channel': 'منطقه‌ای', 'Love': 86, 'Insta': 42}
+            {'Brand': 'سولیکو (کاله)', 'Share': 36, 'Lead_Province': 'سراسری', 'Market': 'Supermarket/B2C', 'B2B': 'Strong', 'B2W': 'High'},
+            {'Brand': 'آندره', 'Share': 22, 'Lead_Province': 'تهران', 'Market': 'پروتئینی لوکس/HoReCa', 'B2B': 'Active', 'B2W': 'Medium'},
+            {'Brand': '۲۰۲', 'Share': 18, 'Lead_Province': 'البرز/مرکز', 'Market': 'Chain Stores', 'B2B': 'Medium', 'B2W': 'Strong'},
+            {'Brand': 'گوشتیران', 'Share': 14, 'Lead_Province': 'جنوب/مرکز', 'Market': 'B2B/Wholesale', 'B2B': 'Strong', 'B2W': 'Low'}
         ]
-        price = 285000
-    else:
-        data = [{'Brand': 'نامشخص', 'Share': 100, 'Region': 'نامشخص', 'Channel': 'نامشخص', 'Love': 50, 'Insta': 50}]
-        price = 100000
-
-    return pd.DataFrame(data), price
-
-# رابط کاربری
-c1, _ = st.columns([2, 1])
-with c1:
-    search_q = st.text_input("", placeholder="محصول استراتژیک را وارد کنید (مثلاً: سس مایونز یا سوسیس آندره)...")
-
-if search_q:
-    df, base_p = get_real_market_data(search_q)
-    leader_info = df.iloc[0]
+        strategy = f"تقویت کانال HoReCa (هتل‌ها و رستوران‌ها) برای برند {q} و استفاده از مدل توزیع Direct-to-Store جهت کاهش هزینه‌های واسطه‌گری."
     
-    # جمله خفن مدیریتی (پیشنهاد هوش مصنوعی)
+    else:
+        data = [{'Brand': 'نامشخص', 'Share': 100, 'Lead_Province': 'سراسری', 'Market': 'B2C', 'B2B': 'Active', 'B2W': 'Active'}]
+        strategy = "برای این محصول دیتای کافی موجود نیست؛ تحلیل بر اساس میانگین بازار خرده‌فروشی انجام شد."
+
+    return pd.DataFrame(data), strategy
+
+# بخش آیکون‌های دایره‌ای مشابه دیجی‌کالا
+st.write("### دسته‌بندی‌های بازار")
+cols_cat = st.columns(6)
+categories = [("سس", "🥫"), ("گوشتی", "🥩"), ("لبنیات", "🥛"), ("نوشیدنی", "🥤"), ("تن‌ماهی", "🐟"), ("روغن", "🌻")]
+for i, (name, icon) in enumerate(categories):
+    with cols_cat[i]:
+        st.markdown(f'<div class="category-circle">{icon}</div><p style="text-align:center; font-size:11px;">{name}</p>', unsafe_allow_html=True)
+
+# فیلد جستجوی هوشمند
+search_input = st.text_input("", placeholder="🔍 نام محصول را برای استعلام از جمینای وارد کنید...")
+
+if search_input:
+    df, ai_strategy = get_ai_market_intelligence(search_input)
+    
+    # نمایش جمله کلیدی استراتژیک
     st.markdown(f"""
-    <div class="strategy-alert">
-        <b>💡 فرمان استراتژیک مدیریت فروش:</b> تحلیل بازار نشان می‌دهد در دسته <b>{search_q}</b>، 
-        برند <b>{leader_info['Brand']}</b> با تکیه بر کانال <b>{leader_info['Channel']}</b> حاکمیت بازار را در اختیار دارد. 
-        <b>فرصت طلایی:</b> با توجه به قدرت برند <b>{df.iloc[1]['Brand']}</b> در منطقه <b>{df.iloc[1]['Region']}</b>، 
-        توصیه می‌شود برای بازپس‌گیری سهم بازار، روی "بسته‌بندی‌های اقتصادی" و "تخفیفات دوره ای شلف" تمرکز کنید. 
-        قیمت روانی بازار در حال حاضر حدود <b>{base_p:,.0f} تومان</b> است.
+    <div class="strategy-card">
+        <h4 style="color:#ef394e; margin-top:0;">💡 تحلیل هوشمند جمینای برای {search_input}:</h4>
+        <p style="font-size:14px;">{ai_strategy}</p>
     </div>
     """, unsafe_allow_html=True)
 
-    # نمایش ۴ نمودار درخواستی در یک ردیف
-    st.write("### 📈 تحلیل چهارگانه ماتریس بازار")
-    r1, r2, r3, r4 = st.columns(4)
+    # بخش نمودارها در یک ردیف
+    st.write("### 📊 ماتریس پایش بازار")
+    m1, m2, m3, m4 = st.columns(4)
     
-    with r1:
-        # ۱. لیدر بازار (Bar Chart)
-        fig1 = px.bar(df.head(3), x='Brand', y='Share', title="🏆 Top 3 Leaders", color='Brand', color_discrete_sequence=['#ff0000', '#555', '#888'])
-        fig1.update_layout(height=200, showlegend=False, margin=dict(t=30, b=0, l=0, r=0), paper_bgcolor='rgba(0,0,0,0)', font=dict(size=9))
+    with m1:
+        # سهم بازار کشوری
+        fig1 = px.pie(df, values='Share', names='Brand', hole=0.7, color_discrete_sequence=['#ef394e', '#333', '#888', '#ccc'])
+        fig1.update_layout(height=200, margin=dict(t=0, b=0, l=0, r=0), showlegend=False)
         st.plotly_chart(fig1, use_container_width=True)
+        st.caption("<p style='text-align:center;'>سهم بازار (%)</p>", unsafe_allow_html=True)
         
-
-    with r2:
-        # ۲. سهم بازار (Pie Chart)
-        fig2 = px.pie(df, values='Share', names='Brand', title="📊 Market Share", hole=0.5, color_discrete_sequence=px.colors.sequential.Reds_r)
-        fig2.update_layout(height=200, showlegend=False, margin=dict(t=30, b=0, l=0, r=0), paper_bgcolor='rgba(0,0,0,0)', font=dict(size=9))
+    with m2:
+        # لیدرهای استانی
+        fig2 = px.bar(df, x='Share', y='Brand', orientation='h', color_discrete_sequence=['#ef394e'])
+        fig2.update_layout(height=200, margin=dict(t=0, b=0, l=0, r=0), xaxis_title="", yaxis_title="")
         st.plotly_chart(fig2, use_container_width=True)
+        st.caption("<p style='text-align:center;'>قدرت برندها</p>", unsafe_allow_html=True)
         
-
-    with r3:
-        # ۳. محبوبیت نزد مردم (Radar Chart)
-        fig3 = go.Figure(go.Scatterpolar(r=df['Love'], theta=df['Brand'], fill='toself', line_color='#00ffcc'))
-        fig3.update_layout(polar=dict(bgcolor='rgba(0,0,0,0)', radialaxis=dict(visible=False)), title="❤️ Consumer Love", height=200, margin=dict(t=30, b=0, l=30, r=30), paper_bgcolor='rgba(0,0,0,0)', font=dict(size=9))
+    with m3:
+        # نمودار رادار برای نفوذ کانال‌ها
+        fig3 = go.Figure(go.Scatterpolar(r=[80, 60, 90, 70], theta=['B2B', 'B2W', 'Retail', 'Online'], fill='toself', line_color='#ef394e'))
+        fig3.update_layout(polar=dict(radialaxis=dict(visible=False)), height=200, margin=dict(t=30, b=20, l=30, r=30))
         st.plotly_chart(fig3, use_container_width=True)
+        st.caption("<p style='text-align:center;'>تحلیل کانال‌های فروش</p>", unsafe_allow_html=True)
         
-
-    with r4:
-        # ۴. بیشترین حضور اینستاگرام (Bar/Line)
-        fig4 = px.line(df, x='Brand', y='Insta', title="📸 Instagram Influence")
-        fig4.update_traces(line_color='#f09433', mode='lines+markers', marker=dict(size=8))
-        fig4.update_layout(height=200, margin=dict(t=30, b=0, l=0, r=0), paper_bgcolor='rgba(0,0,0,0)', font=dict(size=9))
+    with m4:
+        # نفوذ منطقه‌ای
+        fig4 = px.scatter(df, x="Brand", y="Share", size="Share", color="Brand", title="")
+        fig4.update_layout(height=200, margin=dict(t=0, b=0, l=0, r=0), showlegend=False)
         st.plotly_chart(fig4, use_container_width=True)
+        st.caption("<p style='text-align:center;'>پراکندگی رقبا</p>", unsafe_allow_html=True)
         
-
-    # بخش پایینی: توزیع استانی و کانال فروش
+    # کارت‌های تفکیک بازار (B2B, B2W, Region)
     st.write("---")
-    st.write("### 🏢 جزئیات توزیع استانی و کانال‌های فروش")
+    st.write("### 🏢 جزئیات عملیاتی رقبای اصلی")
     
-    # نمایش کارت‌های کوچک برای هر برند
     cols = st.columns(len(df))
     for i, row in df.iterrows():
         with cols[i]:
             st.markdown(f"""
-            <div class="metric-box">
-                <b style="color:#ff0000; font-size:12px;">{row['Brand']}</b><br>
-                <span style="font-size:9px; color:#aaa;">📍 {row['Region']}</span><br>
-                <span style="font-size:10px; color:#00ffcc;">🏪 {row['Channel']}</span>
+            <div style="background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); text-align:center; border:1px solid #eee;">
+                <span class="leader-tag">{row['Brand']}</span><br><br>
+                <p style="font-size:10px; color:#888;">📍 لیدر در: <b>{row.get('Lead_Province', row.get('Region', 'سراسری'))}</b></p>
+                <div style="margin-top:10px;">
+                    <span class="market-tag">B2B: {row.get('B2B', 'Active')}</span>
+                    <span class="market-tag">B2W: {row.get('B2W', 'Active')}</span>
+                </div>
+                <p style="font-size:10px; margin-top:10px; color:#ef394e;">کانال: {row['Market']}</p>
             </div>
             """, unsafe_allow_html=True)
 
-    # جدول داده‌های خام
+    # جدول نهایی مشابه لیست کالاهای دیجی‌کالا
     st.write(" ")
-    df['Price_Estimate'] = [int(base_p * random.uniform(0.9, 1.15)) for _ in range(len(df))]
-    st.table(df[['Brand', 'Share', 'Region', 'Price_Estimate']].style.format({'Price_Estimate': '{:,} T'}))
-
+    st.table(df[['Brand', 'Share', 'Market', 'B2B']])
