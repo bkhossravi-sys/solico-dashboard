@@ -1,105 +1,145 @@
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+
+# تنظیمات اصلی صفحه برای حالت موبایل و دسکتاپ
+st.set_page_config(page_title="Solico Market Intelligence", layout="wide")
+
+# استایل فوق حرفه‌ای ترکیبی از Power BI و Digikala
+st.markdown("""
     <style>
-        @import url('https://v1.fontapi.ir/css/Vazir');
-        body { font-family: 'Vazir', sans-serif; background-color: #f4f7f9; }
-        .radar-placeholder {
-            background: radial-gradient(circle, #2dd4bf 10%, transparent 10%),
-                        radial-gradient(circle, transparent 20%, #134e4a 20%, #134e4a 21%, transparent 21%);
-            background-size: 20px 20px, 100% 100%;
-        }
+    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn&display=swap');
+    html, body, [class*="css"] { font-family: 'Vazirmatn', sans-serif; background-color: #0d1117; color: #e6edf3; }
+    
+    /* هدر سایت با ایمیل کاربر */
+    .top-bar { background: #161b22; padding: 10px; border-bottom: 2px solid #ef394e; text-align: center; margin-bottom: 20px; }
+    .user-email { color: #8b949e; font-size: 12px; letter-spacing: 1px; }
+    
+    /* کارت‌های مشابه Power BI */
+    .metric-card { background: #1c2128; border-radius: 12px; padding: 20px; border: 1px solid #30363d; box-shadow: 0 4px 15px rgba(0,0,0,0.3); text-align: center; }
+    .strategy-box { background: rgba(239, 57, 78, 0.1); border-right: 5px solid #ef394e; padding: 20px; border-radius: 8px; direction: rtl; margin-bottom: 25px; line-height: 1.8; }
+    
+    /* استایل اینپوت جستجو */
+    .stTextInput>div>div>input { border-radius: 30px !important; border: 1px solid #ef394e !important; background: #0d1117 !important; color: #fff !important; text-align: center; height: 50px; }
+    
+    /* دایره‌های دسته‌بندی دیجی‌کالا */
+    .cat-circle { background: #fff; border-radius: 50%; width: 55px; height: 55px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 2px solid #ef394e; }
     </style>
-</head>
-<body class="pb-20">
+    
+    <div class="top-bar">
+        <span style="color:#ef394e; font-weight:bold; font-size:18px;">SOLICO MARKET INTELLIGENCE</span><br>
+        <span class="user-email">By: behr.khosravi@solico-group.ir</span>
+    </div>
+    """, unsafe_allow_html=True)
 
-    <header class="bg-white border-b p-4 flex justify-between items-center sticky top-0 z-10">
-        <button class="text-gray-500">✕</button>
-        <div class="text-center">
-            <h1 class="text-sm font-bold text-gray-800">داشبورد فروش</h1>
-            <p class="text-[10px] text-gray-400 uppercase tracking-widest">Market Analysis Report</p>
+# دیتابیس لوگوها
+BRAND_LOGOS = {
+    "سولیکو (کاله)": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Kalleh_Logo.svg/1200px-Kalleh_Logo.svg.png",
+    "کاله": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Kalleh_Logo.svg/1200px-Kalleh_Logo.svg.png",
+    "مهرام": "https://mahramco.com/wp-content/uploads/2021/05/logo-mahram.png",
+    "دلپذیر": "https://delpazir.com/wp-content/themes/delpazir/assets/images/logo.png",
+    "آندره": "https://andrefood.com/wp-content/uploads/2021/03/Andre-Logo-1.png",
+    "۲۰۲": "https://202.ir/wp-content/uploads/2021/05/logo.png",
+    "طبیعت": "https://tabiat.ir/wp-content/uploads/2020/06/logo.png",
+    "تحفه": "https://tofeh.com/wp-content/uploads/2020/05/logo.png"
+}
+
+def fetch_market_data(query):
+    q = query.strip()
+    # تحلیل سس‌ها
+    if any(x in q for x in ["سس", "مایونز", "کچاپ", "خردل"]):
+        data = [
+            {'Brand': 'مهرام', 'Share': 34, 'Lead': 'تهران', 'B2B': 'بسیار قوی', 'B2W': 'فعال', 'Type': 'Retail/HoReCa'},
+            {'Brand': 'دلپذیر', 'Share': 31, 'Lead': 'سراسری', 'B2B': 'متوسط', 'B2W': 'بسیار قوی', 'Type': 'Mass Market'},
+            {'Brand': 'بیژن', 'Share': 18, 'Lead': 'غرب', 'B2B': 'فعال', 'B2W': 'متوسط', 'Type': 'Retail'},
+            {'Brand': 'سولیکو (کاله)', 'Share': 17, 'Lead': 'شمال', 'B2B': 'قوی', 'B2W': 'فعال', 'Type': 'Premium'}
+        ]
+        strat = "تقویت زنجیره تأمین در بخش B2W (بنکداری) شهرهای مشهد و تبریز جهت کاهش سهم رقبای سنتی."
+    
+    # تحلیل پروتئینی (سوسیس و کالباس)
+    elif any(x in q for x in ["سوسیس", "کالباس", "سوجوک", "ژامبون", "آندره", "گوشت"]):
+        data = [
+            {'Brand': 'سولیکو (کاله)', 'Share': 42, 'Lead': 'سراسری', 'B2B': 'بسیار قوی', 'B2W': 'سیستمی', 'Type': 'Supermarket'},
+            {'Brand': 'آندره', 'Share': 24, 'Lead': 'تهران (مرکز)', 'B2B': 'HoReCa', 'B2W': 'متوسط', 'Type': 'Delicatessen'},
+            {'Brand': '۲۰۲', 'Share': 19, 'Lead': 'البرز', 'B2B': 'فعال', 'B2W': 'قوی', 'Type': 'Chain Stores'},
+            {'Brand': 'گوشتیران', 'Share': 15, 'Lead': 'مرکز', 'B2B': 'سازمانی', 'B2W': 'قوی', 'Type': 'Wholesale'}
+        ]
+        strat = "توسعه خط تولید سوجوک و محصولات تخصصی برای تسلط بر بخش B2B رستوران‌های کژوال تهران."
+    
+    # تحلیل تن ماهی و زیتون
+    elif any(x in q for x in ["تن", "ماهی", "زیتون"]):
+        data = [
+            {'Brand': 'طبیعت', 'Share': 36, 'Lead': 'سراسری', 'B2B': 'سازمانی', 'B2W': 'بسیار قوی', 'Type': 'Hypermarket'},
+            {'Brand': 'تحفه', 'Share': 29, 'Lead': 'جنوب/تهران', 'B2B': 'تخصصی', 'B2W': 'قوی', 'Type': 'Health Focus'},
+            {'Brand': 'شیلتون', 'Share': 20, 'Lead': 'مرکز', 'B2B': 'متوسط', 'B2W': 'فعال', 'Type': 'Retail'}
+        ]
+        strat = "استفاده از مدل فروش B2B برای قراردادهای تأمین غذای ارگان‌ها و بهبود توزیع در فروشگاه‌های زنجیره‌ای."
+    else:
+        return None, None
+    return pd.DataFrame(data), strat
+
+# ردیف آیکون‌های دسته‌بندی (Style Digikala)
+st.write(" ")
+c_cat = st.columns(5)
+cats = [("سس", "🥫"), ("گوشتی", "🥩"), ("کنسرو", "🐟"), ("زیتون", "🫒"), ("لبنیات", "🥛")]
+for i, (n, ico) in enumerate(cats):
+    with c_cat[i]:
+        st.markdown(f'<div class="cat-circle">{ico}</div><p style="text-align:center;font-size:10px;margin-top:5px;">{n}</p>', unsafe_allow_html=True)
+
+# فیلد جستجو
+search = st.text_input("", placeholder="نام محصول را برای تحلیل هوشمند وارد کنید...")
+
+if search:
+    df, strategy_text = fetch_market_data(search)
+    
+    if df is not None:
+        # کارت استراتژی (Hero Section)
+        st.markdown(f"""
+        <div class="strategy-box">
+            <h4 style="color:#ef394e; margin-bottom:10px;">💡 استراتژی افزایش سهم بازار {search}:</h4>
+            {strategy_text}
         </div>
-        <button class="text-yellow-500">🔍</button>
-    </header>
+        """, unsafe_allow_html=True)
 
-    <main class="p-4 space-y-4">
+        # ردیف نمودارهای Power BI
+        st.write("### 📊 Metrics Dashboard")
+        m1, m2, m3 = st.columns([2, 1, 1])
         
-        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 relative overflow-hidden">
-            <h3 class="text-xs font-semibold text-gray-500 mb-2">سهم بازار کل (هدف)</h3>
-            <div class="flex flex-col items-center justify-center py-4">
-                <div class="relative w-40 h-20 overflow-hidden">
-                    <div class="absolute top-0 left-0 w-40 h-40 border-[16px] border-gray-100 rounded-full"></div>
-                    <div class="absolute top-0 left-0 w-40 h-40 border-[16px] border-teal-500 rounded-full border-b-transparent border-r-transparent rotate-[45deg]"></div>
-                </div>
-                <span class="text-2xl font-black text-gray-700 mt-[-20px]">۷۴۵.۸۵</span>
-                <div class="flex justify-between w-full text-[10px] text-gray-400 mt-2">
-                    <span>۰.۰</span>
-                    <span>۱,۴۹۱.۷</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <h3 class="text-xs font-semibold text-gray-500 mb-4">رتبه‌بندی نفوذ برند (محصولات غذایی)</h3>
-            <div class="space-y-3">
-                <div class="flex items-center gap-2">
-                    <span class="text-[10px] w-12 text-gray-400 italic">کاله</span>
-                    <div class="flex-1 bg-gray-100 h-6 rounded relative overflow-hidden">
-                        <div class="bg-blue-500 h-full w-[90%] transition-all duration-1000"></div>
-                        <span class="absolute inset-y-0 right-2 flex items-center text-[10px] text-white font-bold">۱۵۵ میلیون</span>
+        with m1:
+            fig1 = px.bar(df, x='Brand', y='Share', color='Share', text='Share', 
+                          color_continuous_scale=['#444', '#ef394e'], title="سهم بازار (%)")
+            fig1.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#fff", height=300)
+            st.plotly_chart(fig1, use_container_width=True)
+            
+        with m2:
+            fig2 = px.pie(df, values='Share', names='Brand', hole=0.7, color_discrete_sequence=['#ef394e', '#555', '#888', '#aaa'])
+            fig2.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=300)
+            st.plotly_chart(fig2, use_container_width=True)
+            
+        with m3:
+            fig3 = go.Figure(go.Scatterpolar(r=[80, 70, 90, 60], theta=['B2B', 'B2W', 'Retail', 'Online'], fill='toself', fillcolor='rgba(239, 57, 78, 0.3)', line_color='#ef394e'))
+            fig3.update_layout(polar=dict(bgcolor='#161b22', radialaxis=dict(visible=False)), height=300, margin=dict(t=40, b=20), title="Channel Strength")
+            st.plotly_chart(fig3, use_container_width=True)
+            
+        # کارت‌های شناسنامه برند با لوگو
+        st.write("---")
+        st.write("### 🏢 Brand Operational ID")
+        cols = st.columns(len(df))
+        for i, row in df.iterrows():
+            with cols[i]:
+                logo = BRAND_LOGOS.get(row['Brand'], "https://via.placeholder.com/100")
+                st.markdown(f"""
+                <div class="metric-card">
+                    <img src="{logo}" width="60" style="margin-bottom:10px;">
+                    <h5 style="color:#ef394e;">{row['Brand']}</h5>
+                    <p style="font-size:11px; color:#8b949e;">📍 لیدر: {row['Lead']}</p>
+                    <div style="text-align:right; font-size:10px;">
+                        <b>B2B:</b> {row['B2B']}<br>
+                        <b>B2W:</b> {row['B2W']}<br>
+                        <b>Focus:</b> {row['Type']}
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-[10px] w-12 text-gray-400 italic">بیژن</span>
-                    <div class="flex-1 bg-gray-100 h-6 rounded relative overflow-hidden">
-                        <div class="bg-blue-400 h-full w-[70%]"></div>
-                        <span class="absolute inset-y-0 right-2 flex items-center text-[10px] text-white font-bold">۱۲۳ میلیون</span>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-[10px] w-12 text-gray-400 italic">مهرام</span>
-                    <div class="flex-1 bg-gray-100 h-6 rounded relative overflow-hidden">
-                        <div class="bg-blue-300 h-full w-[45%]"></div>
-                        <span class="absolute inset-y-0 right-2 flex items-center text-[10px] text-white font-bold">۶۷ میلیون</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-            <div class="bg-white p-3 rounded-lg border border-gray-100 text-center">
-                <p class="text-[10px] text-gray-400">رشد سالانه</p>
-                <p class="text-lg font-bold text-green-500">+۱۲.۴٪</p>
-            </div>
-            <div class="bg-white p-3 rounded-lg border border-gray-100 text-center">
-                <p class="text-[10px] text-gray-400">تعداد محصول</p>
-                <p class="text-lg font-bold text-gray-700">۴۳۸</p>
-            </div>
-        </div>
-
-    </main>
-
-    <nav class="fixed bottom-0 left-0 right-0 bg-[#333] text-white h-16 flex justify-around items-center">
-        <div class="flex flex-col items-center opacity-50">
-            <span class="text-xs">⭐</span>
-            <span class="text-[10px]">علاقه‌مندی</span>
-        </div>
-        <div class="flex flex-col items-center border-t-2 border-white pt-1">
-            <span class="text-xs">📊</span>
-            <span class="text-[10px]">داشبورد</span>
-        </div>
-        <div class="flex flex-col items-center opacity-50">
-            <span class="text-xs">🔔</span>
-            <span class="text-[10px]">هشدارها</span>
-        </div>
-        <div class="flex flex-col items-center opacity-50">
-            <span class="text-xs">⚙️</span>
-            <span class="text-[10px]">تنظیمات</span>
-        </div>
-    </nav>
-
-</body>
-</html>
+                """, unsafe_allow_html=True)
+    else:
+        st.warning("داده‌ای یافت نشد. لطفاً از دسته‌های سس، سوسیس، کالباس، تن ماهی یا زیتون استفاده کنید.")
