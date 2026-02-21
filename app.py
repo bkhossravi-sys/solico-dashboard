@@ -4,76 +4,92 @@ import plotly.graph_objects as go
 from thefuzz import process
 import google.generativeai as genai
 
-# --- تنظیمات صفحه و استایل مشابه Power BI Mobile ---
-st.set_page_config(page_title="Solico Dashboard", layout="centered")
+# تنظیمات ظاهری داشبورد مدیریتی
+st.set_page_config(page_title="Solico Plus Dashboard", layout="centered")
 
+# استایل‌دهی برای شبیه‌سازی اپلیکیشن موبایل Power BI
 st.markdown("""
     <style>
-    .main { background-color: #f5f7f9; }
-    .stTextInput > div > div > input { border-radius: 20px; text-align: right; }
-    .kpi-card { background-color: white; padding: 15px; border-radius: 15px; 
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; margin-bottom: 10px; }
-    .price-tag { color: #d32f2f; font-size: 24px; font-weight: bold; }
+    [data-testid="stAppViewContainer"] { background-color: #f0f2f5; }
+    .kpi-card { 
+        background-color: white; padding: 20px; border-radius: 15px; 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; 
+    }
+    .price-value { color: #d32f2f; font-size: 32px; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- استخراج داده‌ها از لیست قیمت (نمونه از فایل ارسالی) ---
-# [span_0](start_span)[span_1](start_span)[span_2](start_span)قیمت‌ها بر اساس ستون 'فروش' فایل PDF شما درج شده است[span_0](end_span)[span_1](end_span)[span_2](end_span)
+# [span_2](start_span)[span_3](start_span)[span_4](start_span)[span_5](start_span)[span_6](start_span)دیتابیس محصولات استخراج شده از لیست قیمت شما[span_2](end_span)[span_3](end_span)[span_4](end_span)[span_5](end_span)[span_6](end_span)
 data = [
-    [span_3](start_span){"نام": "کوکتل مخصوص", "قیمت": 14970000, "دسته": "سوسیس فله"}, #[span_3](end_span)
-    [span_4](start_span){"نام": "مرغ آمل ریز ۱۱۰", "قیمت": 8450000, "دسته": "کالای فله"}, #[span_4](end_span)
-    [span_5](start_span){"نام": "جونه ریز ۱۱۰", "قیمت": 13270000, "دسته": "کالای فله"}, #[span_5](end_span)
-    [span_6](start_span){"نام": "هات داگ روسی فله توری", "قیمت": 7790000, "دسته": "سوسیس فله"}, #[span_6](end_span)
-    [span_7](start_span){"نام": "ژامبون مخلوط دار فرش", "قیمت": 552000, "دسته": "محصولات دار فرش"}, #[span_7](end_span)
-    [span_8](start_span){"نام": "مایونز پرچرب دبه", "قیمت": 10158000, "دسته": "مکمل و سالادی"}, #[span_8](end_span)
-    [span_9](start_span){"نام": "زیتون شور باهسته معمولی", "قیمت": 19000000, "دسته": "زیتون"} #[span_9](end_span)
+    {"نام": "مرغ آمل ریز ۱۱۰", "قیمت": 8450000, "دسته": "کالای فله"},
+    {"نام": "جونه ریز ۱۱۰", "قیمت": 13270000, "دسته": "کالای فله"},
+    {"نام": "خونه درشت ۱۳۵", "قیمت": 10550000, "دسته": "کالای فله"},
+    {"نام": "کوکتل مخصوص", "قیمت": 14970000, "دسته": "سوسیس فله"},
+    {"نام": "هات داگ روسی فله توری", "قیمت": 7790000, "دسته": "سوسیس فله"},
+    {"نام": "ژامبون مخلوط دار فرش", "قیمت": 552000, "دسته": "دار فرش"},
+    {"نام": "بیکن ایرلندی دار فرش", "قیمت": 4410200, "دسته": "دار فرش"},
+    {"نام": "سس کچاپ ۸۰۰ گرمی", "قیمت": 1250000, "دسته": "سس"},
+    {"نام": "مایونز پرچرب دبه", "قیمت": 10158000, "دسته": "سس دبه"},
+    {"نام": "زیتون شور باهسته معمولی", "قیمت": 19000000, "دسته": "زیتون"}
 ]
 df = pd.DataFrame(data)
 
-# --- بخش جستجوی هوشمند ---
-st.title("📊 داشبورد استراتژیک سولیکو")
-query = st.text_input("", placeholder="نام محصول را جستجو کنید...")
+st.title("📊 سیستم آنالیز هوشمند سولیکو")
 
-if query:
-    # پیدا کردن بهترین تطبیق با استفاده از کتابخانه thefuzz
-    match, score = process.extractOne(query, df["نام"].tolist())
+# بخش جستجوگر هوشمند
+search_query = st.text_input("", placeholder="نام کالا را وارد کنید (مثلاً: کوکتل مخصوص)...")
+
+if search_query:
+    # [span_7](start_span)[span_8](start_span)[span_9](start_span)جستجوی فازی برای پیدا کردن نزدیک‌ترین نام[span_7](end_span)[span_8](end_span)[span_9](end_span)
+    match, score = process.extractOne(search_query, df["نام"].tolist())
     
     if score > 50:
         item = df[df["نام"] == match].iloc[0]
         
-        # نمایش اطلاعات کالا در کارت‌های شکیل
+        # نمایش کارت شاخص قیمت (مشابه عکس‌های Power BI)
         st.markdown(f"""
         <div class="kpi-card">
-            <h3>{item['نام']}</h3>
-            <p class="price-tag">{item['قیمت']:,} <span style="font-size:14px">ریال</span></p>
-            <p style="color:gray">دسته: {item['دسته']}</p>
+            <p style="color: #555;">محصول انتخاب شده:</p>
+            <h2 style="margin:0;">{item['نام']}</h2>
+            <hr>
+            <p style="color: #555;">قیمت فروش (ریال):</p>
+            <p class="price-value">{item['قیمت']:,}</p>
+            <p style="color: #888;">دسته: {item['دسته']}</p>
         </div>
         """, unsafe_allow_html=True)
 
-        # --- ویژوال‌های مشابه اسکرین‌شات‌های ارسالی ---
+        # نمایش نمودار عقربه‌ای (Gauge) برای تحلیل بصری سهم یا موقعیت قیمتی
         #         fig = go.Figure(go.Indicator(
             mode = "gauge+number",
-            value = (item['قیمت'] / 20000000) * 100, # نمایش فرضی موقعیت قیمتی
-            title = {'text': "شاخص رقابت‌پذیری قیمتی"},
-            gauge = {'axis': {'range': [0, 100]}, 'bar': {'color': "#00ced1"}}
+            value = (item['قیمت'] / 20000000) * 100, # نمایش فرضی نسبت به سقف قیمت لیست
+            domain = {'x': [0, 1], 'y': [0, 1]},
+            title = {'text': "شاخص نفوذ بازار (فرضی)"},
+            gauge = {
+                'axis': {'range': [0, 100]},
+                'bar': {'color': "#00ced1"},
+                'steps': [
+                    {'range': [0, 50], 'color': "#e8f8f8"},
+                    {'range': [50, 100], 'color': "#b2ebf2"}]
+            }
         ))
-        fig.update_layout(height=250, margin=dict(l=20, r=20, t=30, b=20))
+        fig.update_layout(height=280, margin=dict(l=30, r=30, t=50, b=20))
         st.plotly_chart(fig, use_container_width=True)
 
-        # --- اتصال ایمن به Gemini ---
-        st.markdown("### 🤖 تحلیل هوشمند بازار")
-        if st.secrets.get("GOOGLE_API_KEY"):
+        # تحلیل هوش مصنوعی با اتصال به جمینای
+        st.subheader("🤖 تحلیل استراتژیک AI")
+        if "GOOGLE_API_KEY" in st.secrets:
             try:
                 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
                 model = genai.GenerativeModel('gemini-1.5-flash')
-                response = model.generate_content(f"تحلیل لیدر بازار و رقبا برای محصول غذایی: {item['نام']}")
+                analysis_prompt = f"تحلیل بازار ایران برای محصول {item['نام']} با قیمت {item['قیمت']} ریال. رقبای اصلی کیستند؟"
+                response = model.generate_content(analysis_prompt)
                 st.info(response.text)
-            except Exception as e:
-                st.error("خطا در برقراری ارتباط با مدل هوش مصنوعی.")
+            except:
+                st.error("خطا در ارتباط با هوش مصنوعی. لطفاً API Key را چک کنید.")
         else:
-            st.warning("لطفاً API Key را در تنظیمات Streamlit وارد کنید.")
+            st.warning("کلید امنیتی (Secrets) در Streamlit تنظیم نشده است.")
     else:
-        st.error("محصولی با این نام یافت نشد.")
+        st.error("کالا در لیست قیمت پیدا نشد!")
 
 else:
-    st.info("برای شروع، بخشی از نام کالا را تایپ کنید.")
+    st.info("لطفاً بخشی از نام محصول را تایپ کنید تا آنالیز آغاز شود.")
