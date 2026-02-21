@@ -1,81 +1,114 @@
 import streamlit as st
-import google.generativeai as genai
 import pandas as pd
-import requests
+import plotly.graph_objects as go
+import google.generativeai as genai
+from thefuzz import process
 
-# تنظیمات صفحه برای حالت موبایل
-st.set_page_config(page_title="Solico Market Analyzer", layout="centered")
+# --- تنظیمات ظاهر اپلیکیشن (Mobile-First) ---
+st.set_page_config(page_title="Market Analyzer Pro", layout="centered")
 
-# اتصال به جمینای
-genai.configure(api_key="YOUR_GEMINI_API_KEY")
-model = genai.GenerativeModel('gemini-1.5-flash')
-
-# استایل‌دهی CSS برای شبیه‌سازی اپلیکیشن
+# استایل CSS برای شبیه‌سازی اپلیکیشن‌های مدرن (مانند عکس‌های ارسالی شما)
 st.markdown("""
     <style>
-    .main { background-color: #f5f7f9; }
-    .stTextInput > div > div > input { border-radius: 20px; }
-    .report-card { 
-        background-color: white; 
-        padding: 20px; 
-        border-radius: 15px; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        margin-bottom: 15px;
-    }
+    .main { background-color: #F8F9FA; }
+    .stTextInput > div > div > input { border-radius: 25px; border: 2px solid #E0E0E0; padding: 10px 20px; }
+    .card { background-color: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #EEE; }
+    .metric-box { text-align: center; padding: 10px; background: #F0F2F6; border-radius: 12px; }
+    .status-up { color: #28A745; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
-## --- بخش هدر و جستجو ---
-st.title("📊 آنالیزور هوشمند بازار")
-product_name = st.text_input("نام کالا را وارد کنید (مثلاً: مایونز ۹۰۰ یا تون ماهی)", placeholder="جستجو در بازار...")
+# --- بارگذاری داده‌های لیست قیمت (بر اساس فایل ارسالی شما) ---
+# [span_0](start_span)[span_1](start_span)[span_2](start_span)من در اینجا داده‌های کلیدی فایل شما را به صورت دیکشنری وارد کرده‌ام[span_0](end_span)[span_1](end_span)[span_2](end_span)
+raw_data = [
+    {"ID": "30004266", "Product": "مرغ آمل ریز ۱۱۰", "Price": 8450000, "Category": "کالای فله"},
+    {"ID": "30003814", "Product": "جونه ریز ۱۱۰", "Price": 13270000, "Category": "کالای فله"},
+    {"ID": "30010530", "Product": "ژامبون مخلوط دار فرش", "Price": 552000, "Category": "دار فرش"},
+    {"ID": "20011912", "Product": "هات داگ روسی فله توری", "Price": 7790000, "Category": "سوسیس فله"},
+    {"ID": "30008846", "Product": "کوکتل مخصوص", "Price": 14970000, "Category": "سوسیس فله"},
+    {"ID": "20008830", "Product": "آلمانی B", "Price": 4550000, "Category": "سوسیس فله"},
+    {"ID": "30002707", "Product": "مایونز پرچرب دبه", "Price": 10158000, "Category": "سس دبه"},
+    {"ID": "30008397", "Product": "پنیر چدار نارنجی", "Price": 735000, "Category": "پنیر"},
+    {"ID": "30014985", "Product": "زیتون شور باهسته معمولی", "Price": 19000000, "Category": "زیتون"},
+]
+df_master = pd.DataFrame(raw_data)
 
-if product_name:
-    with st.spinner('در حال استخراج داده‌های زنده و تحلیل هوشمند...'):
+# --- تنظیمات هوش مصنوعی جمینای ---
+genai.configure(api_key="YOUR_GEMINI_API_KEY") # کلید خود را اینجا بگذارید
+ai_model = genai.GenerativeModel('gemini-1.5-flash')
+
+# --- بخش جستجوی هوشمند ---
+st.markdown("## 🔍 آنالیز هوشمند کالا")
+search_query = st.text_input("", placeholder="نام کالا را وارد کنید (مثلاً: کوکتل یا مایونز)...")
+
+if search_query:
+    # الگوریتم Fuzzy Search برای پیدا کردن نزدیک‌ترین نام کالا
+    choices = df_master['Product'].tolist()
+    best_match, score = process.extractOne(search_query, choices)
+
+    if score > 50:
+        selected_item = df_master[df_master['Product'] == best_match].iloc[0]
         
-        # ۱. شبیه‌سازی دریافت داده از اسکرپر (دیجی‌کالا/اسنپ مارکت)
-        # در پروژه واقعی اینجا توابع Scrapy یا Selenium فراخوانی می‌شوند
-        market_data = {
-            "برندها": ["مهرام", "بیژن", "کاله (سولیکو)", "تبرک"],
-            "قیمت_میانگین": [95000, 92000, 98000, 89000],
-            "سهم_شبکه‌های_اجتماعی": ["۲۵٪", "۱۵٪", "۴۰٪", "۲۰٪"],
-            "شهر_اصلی": ["تهران", "مشهد", "اصفهان", "تبریز"]
-        }
+        # نمایش کارت محصول
+        st.markdown(f"""
+        <div class="card">
+            <p style="color: grey; font-size: 0.8rem;">کد کالا: {selected_item['ID']}</p>
+            <h3>{selected_item['Product']}</h3>
+            <h2 style="color: #D32F2F;">{selected_item['Price']:,} <span style="font-size: 1rem;">ریال</span></h2>
+            <p>دسته بندی: <b>{selected_item['Category']}</b></p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # --- بخش تحلیل AI حرفه‌ای ---
+        with st.spinner('در حال دریافت تحلیل زنده بازار از Gemini...'):
+            try:
+                prompt = f"""
+                شما یک تحلیلگر ارشد بازار مواد غذایی در ایران هستید. 
+                محصول: {selected_item['Product']}
+                قیمت فعلی سولیکو: {selected_item['Price']} ریال
+                
+                تحلیل کن:
+                1. لیدر بازار ایران (Market Leader) در این محصول کیست؟ (مثلاً کاله، مهرام، بیژن یا ...)
+                2. محبوبیت در اینستاگرام و شبکه های اجتماعی برای این محصول چطور است؟
+                3. قیمت رقبای آنلاین (دیجی کالا/اسنپ مارکت) در چه محدوده ای است؟
+                4. قدرت برند در کدام شهرهای ایران بیشتر است؟
+                
+                پاسخ را به صورت حرفه‌ای، فارسی و در قالب Bullet Points کوتاه بده.
+                """
+                ai_response = ai_model.generate_content(prompt)
+                
+                st.markdown("### 🧠 تحلیل استراتژیک هوش مصنوعی")
+                st.write(ai_response.text)
+                
+            except Exception as e:
+                st.error("خطا در اتصال به هوش مصنوعی.")
+
+        # --- بخش ویژوال (شبیه عکس‌های ارسالی) ---
+        st.markdown("---")
+        col1, col2 = st.columns(2)
         
-        df = pd.DataFrame(market_data)
+        with col1:
+            # نمودار گیج (Gauge Chart) برای سهم بازار فرضی
+            fig = go.Figure(go.Indicator(
+                mode = "gauge+number",
+                value = 65, # سهم بازار فرضی
+                title = {'text': "سهم بازار (فرضی)"},
+                gauge = {'axis': {'range': [0, 100]}, 'bar': {'color': "darkblue"}}
+            ))
+            fig.update_layout(height=250, margin=dict(l=20, r=20, t=50, b=20))
+            st.plotly_chart(fig, use_container_width=True)
 
-        # ۲. ارسال داده به جمینای برای تحلیل حرفه‌ای
-        prompt = f"""
-        به عنوان یک تحلیلگر خبره بازار ایران، محصول "{product_name}" را بر اساس داده‌های زیر تحلیل کن:
-        {df.to_string()}
-        
-        خروجی را در این قالب بده:
-        ۱. لیدر فعلی بازار کیست؟
-        ۲. محبوبیت در شبکه‌های اجتماعی (اینستاگرام و تلگرام).
-        ۳. تحلیل قیمت رقبا نسبت به برند سولیکو.
-        ۴. پیشنهاد استراتژیک برای تصاحب سهم بازار در شهرهای ضعیف‌تر.
-        تحلیل باید بسیار حرفه‌ای و خلاصه باشد.
-        """
-        
-        response = model.generate_content(prompt)
+        with col2:
+            st.markdown("<br><br>", unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class="metric-box">
+                <p>محبوبیت اجتماعی</p>
+                <h3 class="status-up">▲ 12%</h3>
+            </div>
+            """, unsafe_allow_html=True)
 
-        ## --- نمایش خروجی به سبک داشبورد عکس‌های ارسالی ---
-        
-        # کارت لیدر بازار
-        st.markdown(f"""<div class="report-card">
-            <h3>🏆 لیدر بازار: {market_data['برندها'][2]}</h3>
-            <p>{response.text[:200]}...</p>
-        </div>""", unsafe_allow_html=True)
-
-        # نمایش نمودار مقایسه قیمت (شبیه عکس دوم)
-        st.subheader("📊 مقایسه قیمت و سهم اجتماعی")
-        st.bar_chart(df.set_index('برندها')['قیمت_میانگین'])
-
-        # تحلیل کامل جمینای
-        with st.expander("👁 مشاهده تحلیل عمیق AI"):
-            st.write(response.text)
-
-        # دیتای شهرهای برتر
-        st.info(f"📍 تمرکز اصلی برند برتر در شهر: {market_data['شهر_اصلی'][2]}")
+    else:
+        st.warning("کالایی با این نام در لیست قیمت ۲۰۲۶ پیدا نشد.")
 
 else:
-    st.info("لطفاً نام یک محصول را برای تحلیل وارد کنید.")
+    st.info("نام محصول را در کادر بالا بنویسید تا آنالیز کامل ظاهر شود.")
