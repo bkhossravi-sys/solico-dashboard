@@ -2,98 +2,91 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# تنظیمات اصلی
-st.set_page_config(page_title="Kalleh Competitive Analysis", layout="wide")
+# تنظیمات اصلی صفحه
+st.set_page_config(page_title="Solico Plus Analysis 2026", layout="wide")
 
-# استایل‌دهی حرفه‌ای
+# استایل اختصاصی
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
     html, body, [class*="css"] { font-family: 'Vazirmatn', sans-serif; direction: rtl; text-align: right; }
-    .main-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; border-right: 8px solid #ef394e; }
-    .leader-label { background: #ffd700; color: #000; padding: 2px 10px; border-radius: 5px; font-weight: bold; font-size: 12px; }
-    .price-tag { color: #ef394e; font-weight: bold; font-size: 20px; }
+    .stApp { background-color: #ffffff; }
+    .product-box { border: 2px solid #ef394e; border-radius: 15px; padding: 20px; background: #fffcfc; margin-bottom: 20px; }
+    .brand-analysis { background: #f0f2f5; padding: 15px; border-radius: 10px; border-right: 5px solid #333; }
+    .price-tag { color: #ef394e; font-size: 24px; font-weight: bold; }
     </style>
 """, unsafe_allow_html=True)
 
-# ۱. دیتابیس جامع محصولات بر اساس برند کاله و رقبا
-MARKET_DATA = [
-    {
-        "Group": "تون ماهی",
-        "Product": "تن ماهی کاله 400 گرمی",
-        "Price": 1699000,
-        "Leader": "طبیعت",
-        "Competitors": {"طبیعت": 1720000, "تحفه": 1750000, "شیلتون": 1680000},
-        "Strong_Region": "خراسان و جنوب"
-    },
-    {
-        "Group": "مایونز",
-        "Product": "مایونز پرچرب کاله 900 گرمی",
-        "Price": 4650000,
-        "Leader": "کاله (لیدر تخصصی)",
-        "Competitors": {"مهرام": 4800000, "بیژن": 4550000, "بهروز": 4450000},
-        "Strong_Region": "مازندران و تهران"
-    },
-    {
-        "Group": "کچاپ",
-        "Product": "کچاپ کاله 450 گرمی",
-        "Price": 1500000,
-        "Leader": "مهرام",
-        "Competitors": {"مهرام": 1550000, "دلپذیر": 1480000, "بیژن": 1420000},
-        "Strong_Region": "اصفهان و مرکز"
-    },
-    {
-        "Group": "پروتئینی",
-        "Product": "بیکن ایرلندی کاله",
-        "Price": 9820000,
-        "Leader": "سولیکو (لیدر مطلق)",
-        "Competitors": {"آندره": 10500000, "۲۰۲": 9500000},
-        "Strong_Region": "سراسر کشور"
-    }
+# ۱. استخراج دیتای واقعی از فایل ارسالی (Solico Plus Feb 2026)
+# این دیتا مستقیماً از متن فایل استخراج شده است
+RAW_DATA = [
+    # سس‌ها
+    {"کد": "30019555", "نام": "سس کچاپ بطری 800 گرمی", "فروش": 1850000, "خرید": 1622807, "سود": 14, "برند": "سولیکو (سس)"},
+    {"کد": "30019558", "نام": "مایونز پرچرب پت جار 900 گرمی", "فروش": 4650000, "خرید": 4078947, "سود": 14, "برند": "سولیکو (سس)"},
+    {"کد": "30003089", "نام": "مایونز کم‌چرب پت 250", "فروش": 2850000, "خرید": 2500000, "سود": 14, "برند": "سولیکو (سس)"},
+    {"کد": "30002707", "نام": "مایونز پرچرب دبه", "فروش": 10158000, "خرید": 8910526, "سود": 14, "برند": "فله / رستورانی"},
+    
+    # پروتئینی (دار فرش و توری)
+    {"کد": "30012185", "نام": "بیکن ایرلندی دار فرش", "فروش": 5622807, "خرید": 4950000, "سود": 12, "برند": "دار فرش (Premium)"},
+    {"کد": "30013946", "نام": "مارشن دار فرش", "فروش": 5271929, "خرید": 4624500, "سود": 14, "برند": "دار فرش (Premium)"},
+    {"کد": "20011844", "نام": "هات داگ پنیری توری", "فروش": 6570176, "خرید": 5763312, "سود": 12, "برند": "کاله (توری)"},
+    {"کد": "30005468", "نام": "هات داگ 170 توری", "فروش": 9230000, "خرید": 8372930, "سود": 13, "برند": "کاله (توری)"},
+    
+    # زیتون و تن
+    {"کد": "20001518", "نام": "تن ماهی 400 گرمی کاله", "فروش": 1699000, "خرید": 1461140, "سود": 14, "برند": "سولیکو (کنسرو)"},
+    {"کد": "20012692", "نام": "زیتون پرورده 2000 گرمی", "فروش": 9000000, "خرید": 7824088, "سود": 13, "برند": "سولیکو (زیتون)"},
+    {"کد": "30014581", "نام": "زیتون پرورده 80 گرمی", "فروش": 400000, "خرید": 347817, "سود": 12, "برند": "سولیکو (زیتون)"}
 ]
 
-st.title("🛡️ پنل مانیتورینگ محصولات کاله در بازار")
+df_main = pd.DataFrame(RAW_DATA)
 
-# فیلتر جستجو
-search_term = st.text_input("🔍 نام برند یا کالا را وارد کنید (مثلاً: کاله):", value="کاله")
+# هدر اپلیکیشن
+st.markdown("<h1 style='text-align: center; color: #ef394e;'>🔍 جستجوگر عمیق محصولات سولیکو پلاس</h1>", unsafe_allow_html=True)
+st.write("---")
 
-if search_term:
-    # فیلتر کردن محصولات کاله از دیتابیس
-    filtered_results = [item for item in MARKET_DATA if search_term.lower() in item["Product"].lower() or search_term.lower() in item["Group"].lower()]
+# جستجو بر اساس نام کالا
+search_query = st.text_input("📍 نام کالا یا بخشی از آن را وارد کنید (مثلاً: بیکن، مایونز، تن ماهی):", "")
 
-    if filtered_results:
-        for res in filtered_results:
-            with st.container():
-                st.markdown(f'<div class="main-card">', unsafe_allow_html=True)
-                
-                col1, col2, col3 = st.columns([2, 1, 1])
-                
-                with col1:
-                    st.subheader(f"📦 {res['Product']}")
-                    st.write(f"📂 دسته بندی: **{res['Group']}**")
-                    st.markdown(f"🚩 لیدر فعلی بازار: <span class='leader-label'>{res['Leader']}</span>", unsafe_allow_html=True)
-                
-                with col2:
-                    st.write("📍 تمرکز منطقه ای:")
-                    st.info(res['Strong_Region'])
-                
-                with col3:
-                    st.write("💰 قیمت کاله (ریال):")
-                    st.markdown(f"<span class='price-tag'>{res['Price']:,}</span>", unsafe_allow_html=True)
-                
-                # مقایسه با رقبا در قالب نمودار کوچک
-                st.write("📊 **شکاف قیمتی با رقبا:**")
-                all_prices = res['Competitors'].copy()
-                all_prices["کاله (ما)"] = res['Price']
-                df_plot = pd.DataFrame(list(all_prices.items()), columns=['برند', 'قیمت']).sort_values('قیمت')
-                
-                fig = px.bar(df_plot, x='برند', y='قیمت', text='قیمت', height=300,
-                             color='برند', color_discrete_map={"کاله (ما)": "#ef394e"})
-                fig.update_layout(margin=dict(l=20, r=20, t=30, b=20))
-                st.plotly_chart(fig, use_container_width=True)
-                
-                st.markdown('</div>', unsafe_allow_html=True)
+# شرط: تا کالا وارد نشده هیچ خروجی نده
+if search_query:
+    # فیلتر کردن دیتا
+    results = df_main[df_main['نام'].str.contains(search_query, na=False)]
+    
+    if not results.empty:
+        st.success(f"تعداد {len(results)} مورد یافت شد:")
+        
+        for index, row in results.iterrows():
+            st.markdown(f"""
+            <div class="product-box">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h2 style="color: #333;">📦 {row['نام']}</h2>
+                    <span style="background:#ef394e; color:white; padding:5px 15px; border-radius:20px;">کد: {row['کد']}</span>
+                </div>
+                <hr>
+                <div style="display:flex; justify-content:space-around; text-align:center;">
+                    <div><p>قیمت فروش (ریال)</p><p class="price-tag">{row['فروش']:,}</p></div>
+                    <div><p>قیمت خرید (ریال)</p><p style="font-size:20px; color:#555;">{row['خرید']:,}</p></div>
+                    <div><p>حاشیه سود درصد</p><p style="font-size:20px; color:green; font-weight:bold;">{row['سود']}%</p></div>
+                </div>
+                <div class="brand-analysis" style="margin-top:20px;">
+                    <h4>🏛️ موشکافی برند و جایگاه بازار:</h4>
+                    <p><b>نام برند:</b> {row['برند']}</p>
+                    <p><b>وضعیت رقابتی:</b> این کالا در لیست قیمت 2026 جزو اقلام استراتژیک با حاشیه سود {row['سود']} درصد تعریف شده است.</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # نمودار مقایسه‌ای کوچک برای هر کالا
+            plot_data = pd.DataFrame({
+                'نوع قیمت': ['خرید', 'فروش'],
+                'مبلغ (ریال)': [row['خرید'], row['فروش']]
+            })
+            fig = px.bar(plot_data, x='نوع قیمت', y='مبلغ (ریال)', text='مبلغ (ریال)', 
+                         color='نوع قیمت', color_discrete_map={'خرید': '#333', 'فروش': '#ef394e'})
+            st.plotly_chart(fig, use_container_width=True)
+            
     else:
-        st.warning("محصولی با این نام در لیست کاله یافت نشد.")
+        st.warning("کالایی با این نام در دیتابیس ۲۰۲۶ یافت نشد.")
 else:
-    st.info("نام محصول یا برند را وارد کنید.")
+    st.info("💡 منتظر ورود نام کالا هستیم... (لطفاً در کادر بالا تایپ کنید)")
+
