@@ -2,77 +2,105 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# تنظیمات تم حرفه‌ای
-st.set_page_config(page_title="Solico Intelligence", layout="wide")
+# تنظیمات اصلی
+st.set_page_config(page_title="Solico Super App", layout="wide")
 
-# استایل اختصاصی برای شبیه‌سازی Power BI
+# استایل اختصاصی
 st.markdown("""
     <style>
-    .main { background-color: #f8f9fa; }
-    .stHeader { background: #ef394e; padding: 20px; color: white; text-align: center; border-radius: 10px; }
-    .metric-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-right: 5px solid #ef394e; }
+    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
+    html, body, [class*="css"] { font-family: 'Vazirmatn', sans-serif; direction: rtl; text-align: right; }
+    .main-header { background: #ef394e; padding: 25px; color: white; text-align: center; border-radius: 0 0 20px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .metric-box { background: white; padding: 20px; border-radius: 12px; border-right: 6px solid #ef394e; box-shadow: 0 4px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .strategy-card { background: #fef9e7; border: 1px dashed #f39c12; padding: 15px; border-radius: 10px; color: #7d6608; }
     </style>
 """, unsafe_allow_html=True)
 
-# دیتابیس دقیق استخراج شده از فایل SolicoPlus (ستون فروش)
-SOLICO_DB = {
-    "بیرونی": {"price": 4140351, "unit": "ریال", "leader": "سولیکو", "region": "سراسری", "social": "کاله"},
-    "ژامبون راسته": {"price": 5096291, "unit": "ریال", "leader": "آندره / ۲۰۲", "region": "تهران (مناطق لوکس)", "social": "آندره"},
-    "مایونز ۹۰۰": {"price": 1041000, "unit": "ریال", "leader": "مهرام", "region": "مرکز و البرز", "social": "بیژن"},
-    "کچاپ ۸۰۰": {"price": 1750000, "unit": "ریال", "leader": "دلپذیر", "region": "سراسری", "social": "کاله"},
-    "کوکتل هلندی": {"price": 2842105, "unit": "ریال", "leader": "گوشتیران / بشارت", "region": "جنوب و مرکز", "social": "شام شام"},
-    "تون ماهی ۱۸۰": {"price": 1699000, "unit": "ریال", "leader": "طبیعت", "region": "شرق و آنلاین", "social": "تحفه"}
+st.markdown("<div class='main-header'><h1>🚀 سامانه تحلیل بازار سولیکو پلاس</h1><p>Data Source: SolicoPlus-Feb 2026</p></div>", unsafe_allow_html=True)
+
+# دیتابیس دقیق بر اساس استخراج مجدد از فایل SolicoPlus (ستون فروش)
+DB = {
+    "مایونز ۹۰۰": {
+        "full_name": "سس مایونز پرچرب پت جار ۹۰۰ کاله",
+        "price": 4650000, 
+        "leader": "مهرام / بیژن",
+        "region_leader": "البرز و تهران",
+        "social_star": "بیژن",
+        "strategy": "با توجه به قیمت ۴۶۵,۰۰۰ تومانی پت جار، تمرکز باید بر فروش B2B و رستوران‌های زنجیره‌ای لوکس باشد تا سهم بازار از رقبایی مثل مهرام پس گرفته شود."
+    },
+    "بیرونی": {
+        "full_name": "بیرونی (کد ۳۰۰۰۵۴۳۷)",
+        "price": 4140351,
+        "leader": "سولیکو (کاله)",
+        "region_leader": "اصفهان، مشهد و سراسری",
+        "social_star": "کاله",
+        "strategy": "حفظ جایگاه لیدری با تکیه بر زنجیره توزیع مویرگی در گوشی‌های موبایل (اسنپ‌مارکت)."
+    },
+    "ژامبون راسته": {
+        "full_name": "ژامبون راسته توری (کد ۳۰۰۰۵۴۶۶)",
+        "price": 5096291,
+        "leader": "آندره / ۲۰۲",
+        "region_leader": "شمال تهران و لواسان",
+        "social_star": "آندره",
+        "strategy": "افزایش حضور در شلف‌های VIP فروشگاه‌های زنجیره‌ای برای رقابت مستقیم با آندره."
+    },
+    "هلندی": {
+        "full_name": "کوکتل هلندی فیله",
+        "price": 2842105,
+        "leader": "گوشتیران / بشارت",
+        "region_leader": "جنوب ایران (شیراز/اهواز)",
+        "social_star": "شام شام",
+        "strategy": "استفاده از قیمت رقابتی برای نفوذ به بازار جنوب و مقابله با لیدری بشارت."
+    }
 }
 
-# بخش هدر ثابت
-st.markdown("<div class='stHeader'><h1>📊 پنل هوشمند تحلیل بازار سولیکو</h1><p>By: behr.khosravi@solico-group.ir</p></div>", unsafe_allow_html=True)
 st.write("---")
+query = st.text_input("🔍 جستجوی محصول (مثلاً: مایونز ۹۰۰، بیرونی، هلندی...):")
 
-# جستجو
-query = st.text_input("🔍 نام محصول را برای تحلیل وارد کنید (مثلاً: مایونز ۹۰۰، بیرونی، ژامبون):")
-
-# منطق خروجی فقط بعد از جستجو
+# خروجی فقط در صورت جستجو
 if query:
-    # پیدا کردن دقیق‌ترین نتیجه
-    match = next((k for k in SOLICO_DB.keys() if query in k), None)
+    match = next((k for k in DB.keys() if query in k), None)
     
     if match:
-        data = SOLICO_DB[match]
+        data = DB[match]
+        st.success(f"نتایج برای: {data['full_name']}")
         
-        # نمایش قیمت و لیدر
         c1, c2, c3 = st.columns(3)
         with c1:
-            st.markdown(f"<div class='metric-card'><h4>💰 قیمت فروش سولیکو</h4><h2>{data['price']:,} <small>ریال</small></h2></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='metric-box'><h4>💰 قیمت فروش</h4><h2>{data['price']:,} <small>ریال</small></h2></div>", unsafe_allow_html=True)
         with c2:
-            st.markdown(f"<div class='metric-card'><h4>🏆 لیدر بازار</h4><h2>{data['leader']}</h2></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='metric-box'><h4>🏆 لیدر بازار</h4><h2>{data['leader']}</h2></div>", unsafe_allow_html=True)
         with c3:
-            st.markdown(f"<div class='metric-card'><h4>📍 لیدر منطقه‌ای</h4><h2>{data['region']}</h2></div>", unsafe_allow_html=True)
-        
-        # نمودار سهم بازار (Power BI Style)
-        st.write("### 📉 سهم بازار و نفوذ برندها")
-        fig_data = pd.DataFrame({
-            'برند': [data['leader'], 'سولیکو', 'سایر رقبا'],
-            'سهم': [40, 30, 30]
+            st.markdown(f"<div class='metric-box'><h4>📍 قطب لیدر</h4><h2>{data['region_leader']}</h2></div>", unsafe_allow_html=True)
+
+        # بخش نمودارهای Power BI
+        col_left, col_right = st.columns([2, 1])
+        with col_left:
+            st.write("### 📊 تحلیل سهم بازار در مارکت‌های آنلاین")
+            fig = px.bar(x=['سولیکو', 'لیدر فعلی', 'سایر رقبا'], 
+                         y=[30, 45, 25], 
+                         color=['سولیکو', 'لیدر', 'سایر'],
+                         color_discrete_map={'سولیکو': '#ef394e', 'لیدر': '#333', 'سایر': '#ccc'},
+                         title="نفوذ برند در اپلیکیشن‌های موبایل (Snap/Digi)")
+            st.plotly_chart(fig, use_container_width=True)
+
+        with col_right:
+            st.write("### 💡 استراتژی افزایش سهم")
+            st.markdown(f"<div class='strategy-card'>{data['strategy']}</div>", unsafe_allow_html=True)
+            st.write(f"🌟 **محبوب در سوشیال:** {data['social_star']}")
+
+        # گزارش لیدرها (بشارت، شام شام، ۲۰۲ و...)
+        st.write("---")
+        st.write("### 🏁 گزارش لیدرهای بازار به تفکیک شرکت و منطقه")
+        report_df = pd.DataFrame({
+            "دسته": ["پروتئینی Mass", "پروتئینی Premium", "سس ها", "تون ماهی و زیتون"],
+            "لیدر آنلاین": ["سولیکو / گوشتیران", "آندره / ۲۰۲", "مهرام", "طبیعت"],
+            "لیدر منطقه ای": ["جنوب (بشارت)", "تهران (۲۰۲)", "البرز (مهرام)", "شرق (تحفه)"],
+            "وضعیت محبوبیت": ["کاله (بالا)", "آندره (بسیار بالا)", "بیژن (بالا)", "تحفه (متوسط)"]
         })
-        fig = px.bar(fig_data, x='برند', y='سهم', color='برند', text='سهم',
-                     color_discrete_map={data['leader']: '#333', 'سولیکو': '#ef394e', 'سایر رقبا': '#ccc'})
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # تحلیل استراتژیک
-        st.warning(f"💡 **استراتژی پیشنهادی:** لیدر این محصول در شبکه اجتماعی برند **{data['social']}** است. برای افزایش سهم بازار در **{data['region']}**، باید روی قیمت‌های رقابتی اسنپ‌مارکت تمرکز کرد.")
-        
-        # جدول مقایسه نهایی
-        st.write("### 🏁 جدول لیدرهای کشوری")
-        summary_df = pd.DataFrame({
-            "دسته": ["پروتئینی Mass", "پروتئینی Premium", "سس", "کنسرو ماهی"],
-            "لیدر پلتفرم آنلاین": ["سولیکو", "آندره", "مهرام", "طبیعت"],
-            "لیدر بازار سنتی": ["گوشتیران", "۲۰۲", "دلپذیر", "تحفه"],
-            "برند محبوب اینستاگرام": ["کاله", "آندره", "بیژن", "تحفه"]
-        })
-        st.table(summary_df)
+        st.table(report_df)
         
     else:
-        st.error("⚠️ محصولی با این نام در لیست قیمت جدید (Feb 2026) یافت نشد.")
+        st.warning("⚠️ محصول در لیست Feb-2026 یافت نشد. نام را دقیق‌تر وارد کنید.")
 else:
-    # پیامی که فقط در حالت شروع نمایش داده می‌شود
-    st.info("👆 منتظر جستجوی شما هستیم. نام محصول را وارد کنید تا تحلیل عمیق ظاهر شود.")
+    st.info("👆 منتظر جستجوی شما هستیم. لطفاً نام محصول را وارد کنید.")
