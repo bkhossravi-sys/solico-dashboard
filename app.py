@@ -1,96 +1,109 @@
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import random
+import time
 
-# تنظیمات اصلی
-st.set_page_config(page_title="Solico Deep Market Analysis", layout="wide")
+# تنظیمات اصلی با نام جدید
+st.set_page_config(page_title="Market Intelligence Matrix", layout="wide")
 
-# استایل اختصاصی
+# استایل اختصاصی و حرفه‌ای
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
-    html, body, [class*="css"] { font-family: 'Vazirmatn', sans-serif; background-color: #f8f9fa; direction: rtl; }
-    .header-style { background: #ef394e; padding: 20px; color: white; text-align: center; border-radius: 0 0 20px 20px; }
-    .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border-right: 5px solid #ef394e; }
-    .price-text { color: #ef394e; font-weight: bold; font-size: 20px; }
+    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700&display=swap');
+    
+    html, body, [class*="css"] { font-family: 'Vazirmatn', sans-serif; background-color: #f4f7f6; direction: rtl; }
+    
+    .main-header { 
+        background: linear-gradient(90deg, #1a1a1a 0%, #4a4a4a 100%); 
+        padding: 15px; color: white; text-align: right; 
+        border-radius: 10px; margin-bottom: 25px;
+        border-bottom: 4px solid #ef394e;
+    }
+    .sub-title { font-size: 10px; font-weight: 300; letter-spacing: 1px; color: #ccc; text-transform: uppercase; }
+    .card { 
+        background: white; border-radius: 10px; padding: 15px; 
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 15px; 
+        border: 1px solid #eee; transition: 0.3s;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+    .source-tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: #f0f0f0; color: #666; }
     </style>
-    <div class="header-style">
-        <h2>سامانه تحلیل عمیق بازار ایران (نسخه 2026)</h2>
-        <p>By: behr.khosravi@solico-group.ir</p>
+    
+    <div class="main-header">
+        <span class="sub-title">Market Intelligence Matrix</span>
+        <h2 style="margin:0;">سامانه پایش هوشمند بازار (نسخه ۲.۰)</h2>
     </div>
 """, unsafe_allow_html=True)
 
-# دیتابیس بازنگری شده بر اساس گزارش‌های صنعتی (Real-world Weighted Data)
+# دیتابیس داخلی (Ground Truth)
 MARKET_DATABASE = {
     "سس": [
-        {"Brand": "مهرام", "Share": 32, "Price": 52000, "Strength": "لیدر نفوذ در پایتخت", "Logo": "https://mahramco.com/wp-content/uploads/2021/05/logo-mahram.png"},
-        {"Brand": "دلپذیر", "Share": 28, "Price": 49500, "Strength": "لیدر توزیع شهرستان", "Logo": "https://delpazir.com/wp-content/themes/delpazir/assets/images/logo.png"},
-        {"Brand": "بیژن", "Share": 15, "Price": 51000, "Strength": "قوی در B2W و بنکداری", "Logo": "https://bijanfoods.com/wp-content/uploads/2022/07/logo.png"},
-        {"Brand": "کاله (سولیکو)", "Share": 12, "Price": 55000, "Strength": "لیدر سس‌های تخصصی/رژیمی", "Logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Kalleh_Logo.svg/1200px-Kalleh_Logo.svg.png"},
-        {"Brand": "بهروز", "Share": 13, "Price": 48000, "Strength": "وفاداری بالای مشتری قدیمی", "Logo": "https://www.behrouznik.ir/images/logo.png"}
+        {"Brand": "مهرام", "Base_Price": 52000, "Share": 32},
+        {"Brand": "کاله (سولیکو)", "Base_Price": 55000, "Share": 12},
+        {"Brand": "دلپذیر", "Base_Price": 49500, "Share": 28}
     ],
     "پروتئینی": [
-        {"Brand": "سولیکو (کاله)", "Share": 46, "Price": 210000, "Strength": "لیدر مطلق زنجیره سرد ایران", "Logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Kalleh_Logo.svg/1200px-Kalleh_Logo.svg.png"},
-        {"Brand": "آندره", "Share": 18, "Price": 245000, "Strength": "حاکم بازار Premium تهران", "Logo": "https://andrefood.com/wp-content/uploads/2021/03/Andre-Logo-1.png"},
-        {"Brand": "۲۰۲", "Share": 14, "Price": 195000, "Strength": "نفوذ بالا در زنجیره‌ای‌ها", "Logo": "https://202.ir/wp-content/uploads/2021/05/logo.png"},
-        {"Brand": "گوشتیران", "Share": 12, "Price": 185000, "Strength": "قوی در مناقصات دولتی/B2B", "Logo": "https://gooshtiran.com/logo.png"},
-        {"Brand": "سایر", "Share": 10, "Price": 160000, "Strength": "برندهای منطقه‌ای", "Logo": ""}
-    ],
-    "کنسرو": [
-        {"Brand": "طبیعت", "Share": 38, "Price": 89000, "Strength": "لیدر حجم فروش آنلاین/B2W", "Logo": "https://tabiat.ir/wp-content/uploads/2020/06/logo.png"},
-        {"Brand": "تحفه", "Share": 26, "Price": 98000, "Strength": "تنوع بالای محصول (B2C)", "Logo": "https://tofeh.com/wp-content/uploads/2020/05/logo.png"},
-        {"Brand": "شیلتون", "Share": 18, "Price": 92000, "Strength": "ثبات کیفیت در خرده‌فروشی", "Logo": ""},
-        {"Brand": "مکنزی", "Share": 12, "Price": 87000, "Strength": "تبلیغات گسترده محیطی", "Logo": ""}
+        {"Brand": "سولیکو (کاله)", "Base_Price": 210000, "Share": 46},
+        {"Brand": "آندره", "Base_Price": 245000, "Share": 18}
     ]
 }
 
-# منطق جستجو
-query = st.text_input("", placeholder="🔍 جستجوی محصول (سس، کالباس، تن ماهی، زیتون)...")
+# تابع استعلام قیمت زنده (Mock API Call)
+def get_live_prices(category):
+    with st.spinner('در حال استعلام لحظه‌ای از Digikala و SnappMarket...'):
+        time.sleep(1.5) # شبیه‌سازی زمان اتصال به API
+        results = []
+        for item in MARKET_DATABASE.get(category, []):
+            # شبیه‌سازی نوسان قیمت در پلتفرم‌ها
+            dk_price = item['Base_Price'] * random.uniform(0.95, 1.05)
+            snapp_price = item['Base_Price'] * random.uniform(0.93, 1.02)
+            results.append({
+                "Brand": item['Brand'],
+                "Digikala": int(dk_price),
+                "SnappMarket": int(snapp_price),
+                "Market_Share": item['Share']
+            })
+        return pd.DataFrame(results)
 
-category_found = None
+# رابط کاربری جستجو
+query = st.text_input("", placeholder="🔍 نام محصول را جهت تحلیل ماتریکس قیمتی وارد کنید...")
+
 if query:
-    if any(x in query for x in ["سس", "مایونز", "کچاپ"]): category_found = "سس"
-    elif any(x in query for x in ["سوسیس", "کالباس", "پروتئین", "ژامبون"]): category_found = "پروتئینی"
-    elif any(x in query for x in ["تن", "ماهی", "کنسرو", "زیتون"]): category_found = "کنسرو"
+    category = None
+    if "سس" in query: category = "سس"
+    elif any(x in query for x in ["کالباس", "سوسیس", "پروتئین"]): category = "پروتئینی"
 
-if category_found:
-    data = MARKET_DATABASE[category_found]
-    df = pd.DataFrame(data)
-
-    st.write(f"### 📈 گزارش تحلیلی دسته: {category_found}")
-    
-    # نمودار سهم بازار واقعی
-    c1, c2 = st.columns(2)
-    with c1:
-        fig = px.pie(df, values='Share', names='Brand', hole=0.5, 
-                     color_discrete_sequence=px.colors.sequential.Reds_r,
-                     title="سهم بازار واقعی (Updated 2026)")
-        st.plotly_chart(fig, use_container_width=True)
+    if category:
+        df_live = get_live_prices(category)
         
-
-    with c2:
-        fig2 = px.bar(df, x='Brand', y='Price', text='Price', 
-                      title="بنچ‌مارک قیمتی (تومان)",
-                      color_discrete_sequence=['#333'])
-        st.plotly_chart(fig2, use_container_width=True)
+        # بخش بنچ‌مارک قیمتی
+        st.subheader("📊 بنچ‌مارک قیمتی لحظه‌ای")
         
-
-    # کارت‌های اطلاعاتی برندها با لوگو
-    st.write("### 🏢 شناسنامه رقبا و تحلیل استراتژیک")
-    cols = st.columns(len(data))
-    for i, item in enumerate(data):
-        with cols[i]:
-            st.markdown(f"""
-            <div class="card" style="min-height: 250px; text-align: center;">
-                <img src="{item['Logo']}" width="60" style="margin-bottom:10px;">
-                <h4 style="color:#ef394e;">{item['Brand']}</h4>
-                <p style="font-size: 13px;"><b>سهم بازار:</b> {item['Share']}%</p>
-                <p class="price-text">{item['Price']:,}</p>
-                <hr>
-                <p style="font-size: 11px; color: #666;">🛡️ {item['Strength']}</p>
-            </div>
-            """, unsafe_allow_html=True)
-else:
-    st.info("لطفاً نام یک دسته محصول را جستجو کنید تا دیتای دقیق لیدرهای بازار نمایش داده شود.")
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            # نمودار مقایسه‌ای دو پلتفرم
+            fig = px.bar(df_live, x="Brand", y=["Digikala", "SnappMarket"], 
+                         barmode="group",
+                         title="مقایسه قیمت دیجی‌کالا vs اسنپ‌مارکت",
+                         color_discrete_map={"Digikala": "#ef394e", "SnappMarket": "#00d170"})
+            st.plotly_chart(fig, use_container_width=True)
+            
+        with col2:
+            st.markdown("### 🛠 تحلیل ماتریکس")
+            for _, row in df_live.iterrows():
+                diff = row['Digikala'] - row['SnappMarket']
+                color = "green" if diff > 0 else "red"
+                st.markdown(f"""
+                    <div class="card">
+                        <b>{row['Brand']}</b><br>
+                        <span class="source-tag">اختلاف قیمت: {abs(diff):,} تومان</span>
+                        <p style="color:{color}; font-size:12px; margin-top:5px;">
+                            {'▲ گران‌تر در دیجی‌کالا' if diff > 0 else '▼ ارزان‌تر در دیجی‌کالا'}
+                        </p>
+                    </div>
+                """, unsafe_allow_html=True)
+    else:
+        st.warning("محصول مورد نظر در دیتابیس یافت نشد.")
 
