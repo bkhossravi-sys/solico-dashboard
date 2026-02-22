@@ -1,112 +1,96 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
-# تنظیمات صفحه
-st.set_page_config(page_title="Market Intelligence Matrix", layout="wide")
+# تنظیمات اصلی
+st.set_page_config(page_title="MIM | Margin Analysis", layout="wide")
 
-# استایل دهی حرفه‌ای
+# استایل اختصاصی مدیریتی
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700&display=swap');
-    html, body, [class*="css"] { font-family: 'Vazirmatn', sans-serif; direction: rtl; background-color: #f4f6f9; }
-    .main-header { background: #121212; padding: 15px 30px; border-radius: 0 0 20px 20px; border-bottom: 4px solid #ef394e; margin-bottom: 30px; }
-    .app-name { color: #ef394e; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; }
-    .main-title { color: white; font-size: 24px; margin: 5px 0; }
-    .leader-card { background: white; border-right: 10px solid #ef394e; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 30px; }
-    .city-tag { background: #eee; color: #d32f2f; padding: 3px 10px; border-radius: 6px; font-weight: bold; font-size: 13px; }
-    .price-badge { background: #ef394e; color: white; padding: 5px 15px; border-radius: 50px; font-weight: bold; }
+    html, body, [class*="css"] { font-family: 'Vazirmatn', sans-serif; direction: rtl; background-color: #0d1117; color: #e6edf3; }
+    .main-header { background: #161b22; padding: 20px; border-radius: 15px; border-bottom: 4px solid #ef394e; margin-bottom: 25px; }
+    .analysis-card { background: #1c2128; border: 1px solid #30363d; padding: 20px; border-radius: 12px; height: 100%; }
+    .metric-val { color: #ef394e; font-size: 28px; font-weight: bold; }
+    .city-tag { background: #238636; color: white; padding: 2px 8px; border-radius: 5px; font-size: 12px; }
     </style>
     <div class="main-header">
-        <span class="app-name">Market Intelligence Matrix</span>
-        <h1 class="main-title">سامانه پایش لیدرهای بازار ایران (آپدیت زنده اسفند ۱۴۰۴)</h1>
+        <span style="color: #ef394e; font-weight: bold; font-size: 10px; letter-spacing: 2px;">STRATEGIC MARGIN ANALYSIS</span>
+        <h2 style="margin:5px 0;">تحلیل حاشیه سود و شکاف قیمتی بازار (اسفند ۱۴۰۴)</h2>
     </div>
 """, unsafe_allow_html=True)
 
-# دیتابیس واقعی استخراج شده از بازار (اسفند ۱۴۰۴)
-MARKET_DATABASE = {
-    "سس مایونز": {
-        "Leader": "مهرام",
-        "Data": [
-            {"برند": "مهرام (۹۰۰گرم)", "سهم": 32, "قیمت": 220000, "شهر_هدف": "تهران / سراسر ایران", "تحلیل": "لیدر سنتی و نفوذ بالا"},
-            {"برند": "دلپذیر (۹۶۰گرم)", "سهم": 28, "قیمت": 215000, "شهر_هدف": "مشهد / شرق کشور", "تحلیل": "رقیب اول در توزیع مویرگی"},
-            {"برند": "بیژن (۹۰۰گرم)", "سهم": 15, "قیمت": 218000, "شهر_هدف": "شیراز / جنوب ایران", "تحلیل": "تمرکز بر کیفیت پریمیوم"},
-            {"برند": "کاله (۹۰۰گرم)", "سهم": 13, "قیمت": 129500, "شهر_هدف": "آمل / شمال ایران", "تحلیل": "لیدر محصولات رژیمی (زیرو)"},
-            {"برند": "بهروز (۹۰۰گرم)", "سهم": 12, "قیمت": 210000, "شهر_هدف": "اصفهان / یزد", "تحلیل": "قیمت رقابتی"}
-        ]
-    },
-    "سوسیس و کالباس": {
-        "Leader": "سولیکو (کاله)",
-        "Data": [
-            {"برند": "سولیکو (کاله)", "سهم": 46, "قیمت": 628000, "شهر_هدف": "سراسری (قدرت مطلق)", "تحلیل": "لیدر زنجیره تامین"},
-            {"برند": "آندره", "سهم": 18, "قیمت": 550000, "شهر_هدف": "تهران (مناطق ۱ تا ۳)", "تحلیل": "تمرکز بر بازار لوکس"},
-            {"برند": "۲۰۲", "سهم": 14, "قیمت": 680000, "شهر_هدف": "استان البرز / تهران", "تحلیل": "قوی در فروشگاه زنجیره‌ای"},
-            {"برند": "گوشتیران", "سهم": 12, "قیمت": 240000, "شهر_هدف": "سازمانی / قم", "تحلیل": "بزرگترین برند دولتی"},
-            {"برند": "شام شام", "سهم": 10, "قیمت": 580000, "شهر_هدف": "فارس / جنوب غرب", "تحلیل": "قدرت برتر منطقه جنوب"}
-        ]
-    },
-    "تن ماهی": {
-        "Leader": "طبیعت",
-        "Data": [
-            {"برند": "طبیعت (۱۸۰گرم)", "سهم": 38, "قیمت": 138000, "شهر_هدف": "تهران / بازارهای مدرن", "تحلیل": "لیدر تبلیغات و فروش"},
-            {"برند": "شیلتون (۱۸۰گرم)", "سهم": 26, "قیمت": 169000, "شهر_هدف": "اصفهان / مرکز", "تحلیل": "ثبات کیفیت در قیمت بالا"},
-            {"برند": "تحفه (۱۸۰گرم)", "سهم": 18, "قیمت": 120000, "شهر_هدف": "جنوب / بنادر", "تحلیل": "تنوع بالای طعم"},
-            {"برند": "مکنزی (۱۸۰گرم)", "سهم": 12, "قیمت": 132000, "شهر_هدف": "غرب کشور / کرمانشاه", "تحلیل": "پیشرو در کمپین‌های قرعه‌کشی"},
-            {"برند": "کاله (۱۸۰گرم)", "سهم": 6, "قیمت": 145000, "شهر_هدف": "شمال / مازندران", "تحلیل": "بازار خاص (Niche Market)"}
-        ]
-    }
-}
+# داده‌های پایه بر اساس تصاویر ارسالی کاربر (مهرام حدود 520,000 تومان)
+#
+MARKET_LEADER_PRICE = 520000 
+COMPETITORS = [
+    {"Brand": "مهرام", "Share": 35, "Price": 520000, "City": "تهران"},
+    {"Brand": "دلپذیر", "Share": 28, "Price": 495000, "City": "مشهد"},
+    {"Brand": "بیژن", "Share": 15, "Price": 510000, "City": "شیراز"},
+    {"Brand": "بهروز", "Share": 10, "Price": 480000, "City": "اصفهان"}
+]
 
-# رابط کاربری
-query = st.text_input("", placeholder="🔍 نام کالا را وارد کنید (سس، کالباس، تن ماهی)...")
+# سایدبار برای تنظیمات تعاملی کاله (سولیکو)
+st.sidebar.header("⚙️ تنظیمات قیمت کاله")
+kalleh_price = st.sidebar.slider("قیمت پیشنهادی کاله (تومان):", 400000, 600000, 485000, step=5000)
+cost_price = st.sidebar.number_input("بهای تمام شده تخمینی (تومان):", value=350000)
 
-if query:
-    key = None
-    if "سس" in query: key = "سس مایونز"
-    elif any(x in query for x in ["سوسیس", "کالباس", "پروتئین"]): key = "سوسیس و کالباس"
-    elif any(x in query for x in ["تن", "ماهی"]): key = "تن ماهی"
+# محاسبات تحلیلی
+margin_per_unit = kalleh_price - cost_price
+margin_percent = (margin_per_unit / kalleh_price) * 100
+price_gap = ((MARKET_LEADER_PRICE - kalleh_price) / MARKET_LEADER_PRICE) * 100
 
-    if key:
-        info = MARKET_DATABASE[key]
-        df = pd.DataFrame(info["Data"])
-        leader_info = df.iloc[df['سهم'].idxmax()]
+# نمایش داشبورد
+col_m1, col_m2, col_m3 = st.columns(3)
 
-        # ۱. نمایش کارت لیدر
-        st.markdown(f"""
-            <div class="leader-card">
-                <h3 style="color:#ef394e; margin:0;">🏆 لیدر بازار در دسته {key}: {info['Leader']}</h3>
-                <p style="font-size:18px;">سهم بازار: <b>{leader_info['سهم']}%</b> | قیمت روز: <span class="price-badge">{leader_info['قیمت']:,} تومان</span></p>
-                <p>📍 قطب اصلی فروش: <span class="city-tag">{leader_info['شهر_هدف']}</span></p>
-            </div>
-        """, unsafe_allow_html=True)
+with col_m1:
+    st.markdown(f"""<div class="analysis-card">
+        <small>حاشیه سود ناخالص کاله</small><br>
+        <span class="metric-val">{margin_percent:.1f}%</span><br>
+        <small>{margin_per_unit:,} تومان در هر واحد</small>
+    </div>""", unsafe_allow_html=True)
 
-        # ۲. نمودارهای تحلیلی
-        c1, c2 = st.columns(2)
-        with c1:
-            st.subheader("📊 سهم بازار (Market Share)")
-            fig_pie = px.pie(df, values='سهم', names='برند', hole=0.5, color_discrete_sequence=px.colors.sequential.Reds_r)
-            st.plotly_chart(fig_pie, use_container_width=True)
-        
-        with c2:
-            st.subheader("💰 مقایسه قیمت ۵ برند برتر (تومان)")
-            fig_bar = px.bar(df, x='برند', y='قیمت', text='قیمت', color='سهم', color_continuous_scale='Reds')
-            st.plotly_chart(fig_bar, use_container_width=True)
+with col_m2:
+    status_color = "#238636" if price_gap > 5 else "#d29922"
+    st.markdown(f"""<div class="analysis-card">
+        <small>شکاف قیمتی با لیدر (مهرام)</small><br>
+        <span class="metric-val" style="color:{status_color};">{price_gap:.1f}%</span><br>
+        <small>کاله ارزان‌تر از لیدر بازار</small>
+    </div>""", unsafe_allow_html=True)
 
-        # ۳. تحلیل نفوذ شهری
-        st.subheader("🏢 تحلیل استراتژیک و جغرافیایی رقبا")
-        cols = st.columns(5)
-        for i, row in df.iterrows():
-            with cols[i]:
-                st.markdown(f"""
-                    <div style="background:white; padding:15px; border-radius:10px; border:1px solid #ddd; text-align:center; min-height:220px;">
-                        <b style="color:#333;">{row['برند']}</b><br>
-                        <hr>
-                        <p style="font-size:12px; color:#666;">{row['تحلیل']}</p>
-                        <p style="font-size:11px;">📍 {row['شهر_هدف']}</p>
-                        <b style="color:#ef394e;">{row['قیمت']:,}</b>
-                    </div>
-                """, unsafe_allow_html=True)
-    else:
-        st.warning("دسته محصول یافت نشد. لطفاً از کلمات کلیدی مثل 'سس' یا 'تن ماهی' استفاده کنید.")
-else:
-    st.info("💡 نام محصول مورد نظر را جستجو کنید تا اطلاعات ماتریکس (قیمت روز، لیدر و سهم بازار) استخراج شود.")
+with col_m3:
+    st.markdown(f"""<div class="analysis-card">
+        <small>قدرت نفوذ در بازار</small><br>
+        <span class="metric-val">{"بالا" if price_gap > 8 else "متوسط"}</span><br>
+        <span class="city-tag">تمرکز: آمل / شمال ایران</span>
+    </div>""", unsafe_allow_html=True)
+
+st.write("---")
+
+# نمودار مقایسه‌ای حاشیه سود و قیمت
+c1, c2 = st.columns([2, 1])
+
+with c1:
+    st.subheader("📊 بنچ‌مارک قیمتی کل رقبا (Updated)")
+    all_data = COMPETITORS + [{"Brand": "کاله (سولیکو)", "Share": 12, "Price": kalleh_price, "City": "آمل"}]
+    df = pd.DataFrame(all_data)
+    fig = px.bar(df, x='Brand', y='Price', text='Price', color='Brand',
+                 color_discrete_map={'کاله (سولیکو)': '#ef394e', 'مهرام': '#30363d'},
+                 title="مقایسه قیمت کاله با سایر لیدرهای بازار")
+    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='white')
+    st.plotly_chart(fig, use_container_width=True)
+
+with c2:
+    st.subheader("🏢 سهم بازار و نفوذ شهری")
+    # نمایش لیست شهرها به صورت متنی برای وضوح بیشتر
+    for index, row in df.iterrows():
+        st.markdown(f"**{row['Brand']}**: {row['City']} ({row['Share']}%)")
+    
+    fig_pie = px.pie(df, values='Share', names='Brand', hole=0.4,
+                     color_discrete_sequence=px.colors.sequential.Reds_r)
+    fig_pie.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', font_color='white')
+    st.plotly_chart(fig_pie, use_container_width=True)
+
+st.info(f"💡 تحلیل استراتژیک: با قیمت {kalleh_price:,} تومان، کاله دارای {price_gap:.1f}% مزیت رقابتی نسبت به لیدر بازار (مهرام) است.")
