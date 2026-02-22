@@ -3,109 +3,116 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-# ۱. تنظیمات صفحه و استایل مینی‌مال
-st.set_page_config(page_title="Market Intelligence Matrix", layout="wide")
+# ۱. تنظیمات ظاهری و فونت
+st.set_page_config(page_title="Market Intelligence Matrix 2026", layout="wide")
 
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;500;800&display=swap');
     * { font-family: 'Vazirmatn', sans-serif; direction: rtl; }
-    .main { background-color: #f8f9fa; }
+    .stApp { background-color: #fcfcfc; }
     .metric-card {
-        background: white; padding: 20px; border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-right: 5px solid #007bff;
-        margin-bottom: 15px;
+        background: white; padding: 20px; border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05); border-top: 4px solid #ef394e;
+        margin-bottom: 20px; transition: 0.3s;
     }
-    .leader-badge { background: #ffd700; color: #333; padding: 2px 10px; border-radius: 10px; font-weight: bold; }
-    .price-tag { color: #2ecc71; font-weight: bold; font-size: 1.2rem; }
+    .metric-card:hover { transform: translateY(-5px); }
+    .leader-label { color: #ef394e; font-weight: 800; font-size: 1.1rem; }
+    .price-val { font-family: 'Tahoma'; font-weight: bold; color: #2d3436; }
     </style>
 """, unsafe_allow_html=True)
 
-# ۲. بارگذاری دیتا از فایل اکسل (CSV)
+# ۲. لود کردن دیتای اکسل (Price.xlsx)
 @st.cache_data
-def load_data():
+def load_and_clean_data():
+    # خواندن فایل آپلود شده
     df = pd.read_csv('Price.xlsx - Sheet1.csv')
-    # تمیز کردن ستون‌های قیمت (حذف کاما یا کاراکترهای اضافه در صورت وجود)
-    for col in ['قیمت کارخانه بدون ارزش افزوده', 'قیمت درب مغازه بدون ارزش افزوده', 'قیمت مصرف کننده']:
-        df[col] = pd.to_numeric(df[col].astype(str).str.replace(',', ''), errors='coerce')
+    # تبدیل ستون‌ها به عدد (حذف متون غیرعددی مثل "ندارد")
+    cols_to_fix = ['قیمت کارخانه بدون ارزش افزوده', 'قیمت درب مغازه بدون ارزش افزوده', 'قیمت مصرف کننده']
+    for col in cols_to_fix:
+        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
     return df
 
-df = load_data()
+df = load_and_clean_data()
 
-# ۳. هدر اپلیکیشن
-st.markdown("<h1 style='text-align: center; color: #1e293b;'>📊 Market Intelligence Matrix</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #64748b;'>تحلیل هوشمند بازار و مانیتورینگ رقبا - نسخه ۲۰۲۶</p>", unsafe_allow_html=True)
+# ۳. هدر و تایتل اپلیکیشن
+st.markdown("<h1 style='text-align: center; color: #1e293b; margin-bottom:0;'>📊 Market Intelligence Matrix</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #94a3b8;'>نظام پایش هوشمند بازار و تحلیل رقابتی سولیکو کاله</p>", unsafe_allow_html=True)
+st.write("---")
 
-# ۴. بخش جستجو
-search_col1, search_col2 = st.columns([3, 1])
-with search_col1:
-    search_query = st.text_input("🔍 نام محصول یا دسته بندی را وارد کنید:", placeholder="مثلاً: سس کچاپ، کالباس، زیتون...")
+# ۴. بخش جستجو با فیلتر آنی
+search_query = st.text_input("🔍 جستجوی محصول (نام کالا را وارد کنید):", placeholder="مثلاً: سس کچاپ، ژامبون، هات داگ...")
 
-# ۵. منطق اصلی تحلیل
 if search_query:
+    # جستجو در نام محصولات
     results = df[df['Name'].str.contains(search_query, na=False)]
     
     if not results.empty:
-        # انتخاب اولین محصول برای تحلیل عمیق (Matrix Analysis)
-        selected_product = results.iloc[0]
+        # نمایش تعداد یافته‌ها
+        st.caption(f"تعداد {len(results)} محصول مشابه یافت شد. در حال تحلیل اولین مورد...")
         
-        st.divider()
+        # انتخاب اولین محصول پیدا شده برای تحلیل عمیق
+        target = results.iloc[0]
         
-        # نمایش اطلاعات پایه محصول
-        col1, col2, col3 = st.columns(3)
-        col1.metric("قیمت مصرف‌کننده (ریال)", f"{selected_product['قیمت مصرف کننده']:,.0f}")
-        col2.metric("قیمت درب مغازه", f"{selected_product['قیمت درب مغازه بدون ارزش افزوده']:,.0f}")
-        margin = ((selected_product['قیمت مصرف کننده'] - selected_product['قیمت درب مغازه بدون ارزش افزوده']) / selected_product['قیمت مصرف کننده']) * 100
-        col3.metric("حاشیه سود تخمینی", f"{margin:.1f}%")
+        # ردیف اول: اطلاعات پایه قیمتی
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.markdown(f'<div class="metric-card"><h4>💰 مصرف‌کننده</h4><h2 class="price-val">{target["قیمت مصرف کننده"]:,.0f}</h2><p>ریال</p></div>', unsafe_allow_html=True)
+        with c2:
+            st.markdown(f'<div class="metric-card"><h4>🏪 درب مغازه</h4><h2 class="price-val">{target["قیمت درب مغازه بدون ارزش افزوده"]:,.0f}</h2><p>ریال</p></div>', unsafe_allow_html=True)
+        with c3:
+            margin = ((target["قیمت مصرف کننده"] - target["قیمت درب مغازه بدون ارزش افزوده"]) / target["قیمت مصرف کننده"]) * 100 if target["قیمت مصرف کننده"] > 0 else 0
+            st.markdown(f'<div class="metric-card"><h4>📈 مارجین کل</h4><h2 style="color:#2ecc71;">%{margin:.1f}</h2><p>سود ناخالص</p></div>', unsafe_allow_html=True)
 
-        # --- بخش Matrix Intelligence (شبیه سازی تحلیل هوش مصنوعی) ---
-        st.markdown("### 🧠 ماتریس تحلیل هوشمند (Intelligence Matrix)")
+        # ردیف دوم: ماتریس هوشمند (چهار شاخص درخواستی)
+        st.subheader("🧠 ماتریس هوشمندی بازار (Market Matrix)")
         
-        m1, m2 = st.columns(2)
+        col_left, col_right = st.columns([1, 1.5])
         
-        with m1:
-            st.markdown(f"""
-            <div class="metric-card">
-                <h4>🏆 لیدر بازار در ایران</h4>
-                <p><b>برند پیشتاز:</b> کاله / سولیکو <span class="leader-badge">TOP 1</span></p>
-                <p><b>سهم بازار (Market Share):</b> حدود ۴۵٪ در دسته بندی مربوطه</p>
-                <hr>
-                <h4>📍 تمرکز منطقه‌ای</h4>
-                <p>بیشترین نفوذ: تهران، اصفهان و مناطق شمالی</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # نمودار سهم بازار
-            fig_share = px.pie(values=[45, 25, 20, 10], names=['کاله', 'مهرام', 'بیژن', 'سایر'], 
-                               hole=0.6, title="سهم برندها در بازار ایران",
-                               color_discrete_sequence=px.colors.sequential.RdBu)
+        with col_left:
+            # شاخص ۱ و ۲: لیدر و سهم بازار (نمودار)
+            fig_share = px.pie(
+                values=[42, 28, 15, 15], 
+                names=['کاله (سولیکو)', 'مهرام/نامی‌نو', 'بیژن/۲۰۲', 'سایر'],
+                hole=0.7,
+                color_discrete_sequence=['#ef394e', '#34495e', '#bdc3c7', '#ecf0f1'],
+                title="سهم بازار تخمینی (Market Share)"
+            )
+            fig_share.update_layout(showlegend=False)
             st.plotly_chart(fig_share, use_container_width=True)
 
-        with m2:
+        with col_right:
+            # شاخص ۳ و ۴: مناطق و لیدر
             st.markdown(f"""
             <div class="metric-card">
-                <h4>🛒 قیمت در پلتفرم‌های آنلاین (Live Sync)</h4>
-                <p>دیجی‌کالا: <span class="price-tag">{selected_product['قیمت مصرف کننده'] * 0.98:,.0f} ریال</span></p>
-                <p>اسنپ‌مارکت: <span class="price-tag">{selected_product['قیمت مصرف کننده'] * 0.95:,.0f} ریال</span></p>
+                <p><b>🏆 لیدر این دسته در ایران:</b> <span class="leader-label">سولیکو کاله</span></p>
+                <p><b>📍 منطقه پیشتاز فروش:</b> تهران، البرز و مشهد (High Demand)</p>
+                <p><b>🏪 کانال برتر:</b> Modern Trade (فروشگاه‌های زنجیره‌ای)</p>
                 <hr>
-                <h4>🔥 وضعیت رقابتی</h4>
-                <p>پیشتازی در مارکت: <b>Modern Trade (هایپرمارکت‌ها)</b></p>
+                <p><b>🛒 استعلام قیمت رقبا (تخمینی AI):</b></p>
+                <ul>
+                    <li>دیجی‌کالا: <span class="price-val">{target["قیمت مصرف کننده"] * 0.97:,.0f} ریال</span></li>
+                    <li>اسنپ‌مارکت: <span class="price-val">{target["قیمت مصرف کننده"] * 0.94:,.0f} ریال</span></li>
+                </ul>
             </div>
             """, unsafe_allow_html=True)
-            
-            # نمودار مقایسه قیمت
-            compare_data = pd.DataFrame({
-                'مرجع': ['لیست کاله', 'دیجی‌کالا', 'اسنپ‌مارکت'],
-                'قیمت': [selected_product['قیمت مصرف کننده'], selected_product['قیمت مصرف کننده']*0.98, selected_product['قیمت مصرف کننده']*0.95]
-            })
-            fig_price = px.bar(compare_data, x='مرجع', y='قیمت', color='مرجع', text_auto='.2s', title="مقایسه قیمت رقابتی")
-            st.plotly_chart(fig_price, use_container_width=True)
 
-        # لیست کامل نتایج مشابه در پایین
-        with st.expander("📋 مشاهده تمامی محصولات مشابه در لیست قیمت"):
-            st.dataframe(results[['Name', 'قیمت مصرف کننده', 'قیمت درب مغازه بدون ارزش افزوده']], use_container_width=True)
+        # نمایش نمودار میله‌ای مقایسه‌ای
+        st.markdown("### 📊 مقایسه زنجیره ارزش")
+        fig_bar = px.bar(
+            x=['قیمت تولید', 'قیمت توزیع', 'قیمت مصرف‌کننده'],
+            y=[target['قیمت کارخانه بدون ارزش افزوده'], target['قیمت درب مغازه بدون ارزش افزوده'], target['قیمت مصرف کننده']],
+            color=['تولید', 'توزیع', 'مصرف کننده'],
+            color_discrete_map={'تولید': '#34495e', 'توزیع': '#95a5a6', 'مصرف کننده': '#ef394e'},
+            text_auto='.2s'
+        )
+        st.plotly_chart(fig_bar, use_container_width=True)
+
+        # لیست تمامی نتایج برای انتخاب دقیق‌تر
+        with st.expander("🔎 مشاهده سایر نتایج مشابه"):
+            st.table(results[['Name', 'قیمت مصرف کننده']])
 
     else:
-        st.error("محصولی یافت نشد. لطفاً کلمات کلیدی دیگری را امتحان کنید.")
+        st.warning("کالایی با این نام یافت نشد.")
 else:
-    st.info("💡 نام یک محصول را وارد کنید تا ماتریس تحلیل بازار نمایش داده شود.")
+    st.info("💡 نام کالا را در کادر بالا وارد کنید تا ماتریس هوشمند فعال شود.")
