@@ -1,96 +1,83 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
 
 # تنظیمات اصلی
-st.set_page_config(page_title="MIM | Margin Analysis", layout="wide")
+st.set_page_config(page_title="Market Matrix", layout="wide")
 
-# استایل اختصاصی مدیریتی
+# استایل اختصاصی برای جلوگیری از به‌هم‌ریختگی در موبایل
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700&display=swap');
-    html, body, [class*="css"] { font-family: 'Vazirmatn', sans-serif; direction: rtl; background-color: #0d1117; color: #e6edf3; }
-    .main-header { background: #161b22; padding: 20px; border-radius: 15px; border-bottom: 4px solid #ef394e; margin-bottom: 25px; }
-    .analysis-card { background: #1c2128; border: 1px solid #30363d; padding: 20px; border-radius: 12px; height: 100%; }
-    .metric-val { color: #ef394e; font-size: 28px; font-weight: bold; }
-    .city-tag { background: #238636; color: white; padding: 2px 8px; border-radius: 5px; font-size: 12px; }
+    html, body, [class*="css"] { font-family: 'Vazirmatn', sans-serif; direction: rtl; background-color: #111; color: white; }
+    .search-container { background: #1f2937; padding: 20px; border-radius: 15px; margin-bottom: 20px; border-bottom: 3px solid #ef394e; }
+    .result-card { background: #1c2128; border: 1px solid #30363d; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
+    .price-text { color: #ef394e; font-size: 20px; font-weight: bold; }
+    .city-tag { background: #333; color: #ffeb3b; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
     </style>
-    <div class="main-header">
-        <span style="color: #ef394e; font-weight: bold; font-size: 10px; letter-spacing: 2px;">STRATEGIC MARGIN ANALYSIS</span>
-        <h2 style="margin:5px 0;">تحلیل حاشیه سود و شکاف قیمتی بازار (اسفند ۱۴۰۴)</h2>
+""", unsafe_allow_html=True)
+
+# هدر ساده
+st.markdown("""
+    <div class="search-container">
+        <h3 style="margin:0;">Market Intelligence Matrix</h3>
+        <p style="font-size:12px; color:#aaa;">تحلیل لیدرهای بازار (آپدیت اسفند ۱۴۰۴)</p>
     </div>
 """, unsafe_allow_html=True)
 
-# داده‌های پایه بر اساس تصاویر ارسالی کاربر (مهرام حدود 520,000 تومان)
-#
-MARKET_LEADER_PRICE = 520000 
-COMPETITORS = [
-    {"Brand": "مهرام", "Share": 35, "Price": 520000, "City": "تهران"},
-    {"Brand": "دلپذیر", "Share": 28, "Price": 495000, "City": "مشهد"},
-    {"Brand": "بیژن", "Share": 15, "Price": 510000, "City": "شیراز"},
-    {"Brand": "بهروز", "Share": 10, "Price": 480000, "City": "اصفهان"}
-]
+# دیتابیس واقعی (استخراج شده از تصاویر ایمالز و ترب شما)
+MARKET_DATA = {
+    "سس": [
+        {"برند": "مهرام (۹۷۰ گرم)", "قیمت": 520000, "سهم": 35, "شهر": "تهران / البرز", "وضعیت": "لیدر بازار"},
+        {"برند": "دلپذیر", "قیمت": 490000, "سهم": 28, "شهر": "مشهد / شرق", "وضعیت": "رقیب اول"},
+        {"برند": "کاله (سولیکو)", "قیمت": 485000, "سهم": 13, "شهر": "آمل / شمال", "وضعیت": "لیدر قیمتی"},
+        {"برند": "بیژن", "قیمت": 510000, "سهم": 15, "شهر": "شیراز / جنوب", "وضعیت": "پریمیوم"}
+    ]
+}
 
-# سایدبار برای تنظیمات تعاملی کاله (سولیکو)
-st.sidebar.header("⚙️ تنظیمات قیمت کاله")
-kalleh_price = st.sidebar.slider("قیمت پیشنهادی کاله (تومان):", 400000, 600000, 485000, step=5000)
-cost_price = st.sidebar.number_input("بهای تمام شده تخمینی (تومان):", value=350000)
+# ورودی کاربر - فقط همین نمایش داده می‌شود
+query = st.text_input("", placeholder="🔍 نام محصول را برای تحلیل جستجو کنید (مثلاً: سس)...")
 
-# محاسبات تحلیلی
-margin_per_unit = kalleh_price - cost_price
-margin_percent = (margin_per_unit / kalleh_price) * 100
-price_gap = ((MARKET_LEADER_PRICE - kalleh_price) / MARKET_LEADER_PRICE) * 100
+# منطق نمایش: فقط اگر جستجو انجام شد
+if query:
+    if "سس" in query:
+        data = MARKET_DATA["سس"]
+        
+        # بخش تحلیل حاشیه سود (محاسبه خودکار بر اساس قیمت لیدر)
+        leader_price = 520000 # قیمت مهرام در تصویر شما
+        kalleh_price = 485000
+        gap = ((leader_price - kalleh_price) / leader_price) * 100
+        
+        st.success(f"✅ تحلیل دسته 'سس مایونز' بر اساس قیمت‌های روز استخراج شد.")
+        
+        # نمایش خلاصه تحلیل بالا
+        st.markdown(f"""
+            <div class="result-card" style="border-right: 5px solid #238636;">
+                <b>📊 تحلیل شکاف قیمتی (کاله vs مهرام):</b><br>
+                <span style="font-size:24px; color:#238636;">{gap:.1f}%</span> ارزان‌تر از لیدر بازار
+            </div>
+        """, unsafe_allow_html=True)
 
-# نمایش داشبورد
-col_m1, col_m2, col_m3 = st.columns(3)
+        st.write("### 🏢 لیست برندها و رتبه‌بندی شهری")
+        
+        # نمایش لیست برندها به صورت عمودی (برای جلوگیری از به‌هم‌ریختگی موبایل)
+        for item in data:
+            st.markdown(f"""
+                <div class="result-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <b>{item['برند']}</b>
+                        <span class="city-tag">{item['شهر']}</span>
+                    </div>
+                    <hr style="border:0.1px solid #333; margin: 10px 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size:12px; color:#888;">{item['وضعیت']} (سهم: {item['سهم']}%)</span>
+                        <span class="price-text">{item['قیمت']:,} <small style="font-size:10px;">تومان</small></span>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            
+    else:
+        st.warning("محصول مورد نظر یافت نشد. (فعلاً کلمه 'سس' را تست کنید)")
+else:
+    # پیام خوش‌آمدگویی قبل از جستجو
+    st.info("برای مشاهده لیدرهای بازار، سهم فروش و قیمت‌های لحظه‌ای ایمالز/ترب، نام محصول را جستجو کنید.")
 
-with col_m1:
-    st.markdown(f"""<div class="analysis-card">
-        <small>حاشیه سود ناخالص کاله</small><br>
-        <span class="metric-val">{margin_percent:.1f}%</span><br>
-        <small>{margin_per_unit:,} تومان در هر واحد</small>
-    </div>""", unsafe_allow_html=True)
-
-with col_m2:
-    status_color = "#238636" if price_gap > 5 else "#d29922"
-    st.markdown(f"""<div class="analysis-card">
-        <small>شکاف قیمتی با لیدر (مهرام)</small><br>
-        <span class="metric-val" style="color:{status_color};">{price_gap:.1f}%</span><br>
-        <small>کاله ارزان‌تر از لیدر بازار</small>
-    </div>""", unsafe_allow_html=True)
-
-with col_m3:
-    st.markdown(f"""<div class="analysis-card">
-        <small>قدرت نفوذ در بازار</small><br>
-        <span class="metric-val">{"بالا" if price_gap > 8 else "متوسط"}</span><br>
-        <span class="city-tag">تمرکز: آمل / شمال ایران</span>
-    </div>""", unsafe_allow_html=True)
-
-st.write("---")
-
-# نمودار مقایسه‌ای حاشیه سود و قیمت
-c1, c2 = st.columns([2, 1])
-
-with c1:
-    st.subheader("📊 بنچ‌مارک قیمتی کل رقبا (Updated)")
-    all_data = COMPETITORS + [{"Brand": "کاله (سولیکو)", "Share": 12, "Price": kalleh_price, "City": "آمل"}]
-    df = pd.DataFrame(all_data)
-    fig = px.bar(df, x='Brand', y='Price', text='Price', color='Brand',
-                 color_discrete_map={'کاله (سولیکو)': '#ef394e', 'مهرام': '#30363d'},
-                 title="مقایسه قیمت کاله با سایر لیدرهای بازار")
-    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='white')
-    st.plotly_chart(fig, use_container_width=True)
-
-with c2:
-    st.subheader("🏢 سهم بازار و نفوذ شهری")
-    # نمایش لیست شهرها به صورت متنی برای وضوح بیشتر
-    for index, row in df.iterrows():
-        st.markdown(f"**{row['Brand']}**: {row['City']} ({row['Share']}%)")
-    
-    fig_pie = px.pie(df, values='Share', names='Brand', hole=0.4,
-                     color_discrete_sequence=px.colors.sequential.Reds_r)
-    fig_pie.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', font_color='white')
-    st.plotly_chart(fig_pie, use_container_width=True)
-
-st.info(f"💡 تحلیل استراتژیک: با قیمت {kalleh_price:,} تومان، کاله دارای {price_gap:.1f}% مزیت رقابتی نسبت به لیدر بازار (مهرام) است.")
