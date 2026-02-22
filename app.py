@@ -2,80 +2,86 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# بررسی نصب بودن کتابخانه برای جلوگیری از کرش
-try:
-    import pdfplumber
-    PDF_READY = True
-except ImportError:
-    PDF_READY = False
+# 1. تنظیمات ظاهری (Modern Management Dashboard)
+st.set_page_config(page_title="Solico Market Matrix", layout="wide")
 
-# تنظیمات هدر و استایل
-st.set_page_config(page_title="Market Intelligence Matrix", layout="wide")
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;500;800&display=swap');
     * { font-family: 'Vazirmatn', sans-serif; direction: rtl; }
-    .main-title { color: #ef394e; font-weight: 800; text-align: center; border-bottom: 2px solid #ef394e; padding-bottom: 10px; }
+    .main-header {
+        background: linear-gradient(90deg, #1e293b 0%, #ef394e 100%);
+        padding: 1.5rem; border-radius: 15px; color: white; 
+        text-align: center; margin-bottom: 2rem;
+    }
+    .metric-container {
+        background: white; padding: 15px; border-radius: 10px;
+        border-right: 5px solid #ef394e; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        text-align: center;
+    }
     </style>
-    <h1 class="main-title">Market Intelligence Matrix</h1>
+    <div class="main-header">
+        <h2 style="margin:0;">Market Intelligence Matrix</h2>
+        <p style="font-size: 0.8rem; opacity:0.8;">Material Price Analysis | Feb 2026</p>
+    </div>
 """, unsafe_allow_html=True)
 
-if not PDF_READY:
-    st.error("❌ کتابخانه pdfplumber نصب نیست. لطفا فایل requirements.txt را در گیت‌هاب بسازید.")
-    st.stop()
+# 2. دیتابیس استخراج شده از فایل‌های PDF و XLSX شما
+raw_data = [
+    # سوسیس و کالباس (دارفرش و فله)
+    {"نام کالا": "پپرونی دارفرش", "دسته": "پروتئینی", "قیمت فروش": 4720000},
+    {"نام کالا": "سالامی شکاری دارفرش", "دسته": "پروتئینی", "قیمت فروش": 2780000},
+    {"نام کالا": "ژامبون راسته با توری", "دسته": "پروتئینی", "قیمت فروش": 5810000},
+    {"نام کالا": "بیکن با توری دارفرش", "دسته": "پروتئینی", "قیمت فروش": 5900000},
+    {"نام کالا": "مارتادلا دارفرش", "دسته": "پروتئینی", "قیمت فروش": 3120000},
+    {"نام کالا": "ژامبون مخلوط دارفرش 250 گرمی", "دسته": "پروتئینی", "قیمت فروش": 5520000},
+    {"نام کالا": "ژامبون نوروزی دارفرش 250 گرمی", "دسته": "پروتئینی", "قیمت فروش": 6360000},
+    {"نام کالا": "کالباس با پنیر کراکف فله", "دسته": "پروتئینی", "قیمت فروش": 3090000},
+    {"نام کالا": "کالباس خشک هلندی 60 فله", "دسته": "پروتئینی", "قیمت فروش": 5670000},
+    {"نام کالا": "هات داگ گوشت توری", "دسته": "پروتئینی", "قیمت فروش": 6660000},
+    
+    # سس‌ها (کاله)
+    {"نام کالا": "سس مایونز شیشه 900 گرمی کاله", "دسته": "سس", "قیمت فروش": 1700000},
+    {"نام کالا": "سس سزار بطر پت 440 گرمی کاله", "دسته": "سس", "قیمت فروش": 2100000},
+    {"نام کالا": "سس کچاپ گالن 2 کیلویی کاله", "دسته": "سس", "قیمت فروش": 3900000},
+    {"نام کالا": "سس انار بالزامیک پت 400 گرمی کاله", "دسته": "سس", "قیمت فروش": 1850000},
+    {"نام کالا": "سس کچاپ بطر 800 گرمی کاله", "دسته": "سس", "قیمت فروش": 1750000},
+    
+    # زیتون و سایر
+    {"نام کالا": "زیتون پرورده محلی 80 گرمی", "دسته": "زیتون", "قیمت فروش": 550000},
+    {"نام کالا": "کمبو دیلایت", "دسته": "سایر", "قیمت فروش": 3820000},
+    {"نام کالا": "کمبو پارتی", "دسته": "سایر", "قیمت فروش": 4030000},
+    {"نام کالا": "هویج فرمی 70 گرمی (بسته بندی رنگی)", "دسته": "سایر", "قیمت فروش": 735000},
+]
 
-# تابع هوشمند استخراج داده
-@st.cache_data
-def load_pdf_data(file_path):
-    all_rows = []
-    try:
-        with pdfplumber.open(file_path) as pdf:
-            for page in pdf.pages:
-                table = page.extract_table()
-                if table:
-                    # استفاده از سطر اول به عنوان تیتر
-                    df_temp = pd.DataFrame(table[1:], columns=table[0])
-                    all_rows.append(df_temp)
-        return pd.concat(all_rows, ignore_index=True)
-    except Exception as e:
-        st.error(f"خطا در پردازش فایل: {e}")
-        return None
+df = pd.DataFrame(raw_data)
 
-# نام فایل PDF شما
-PDF_FILE = "SolicoPlus  - Material Price -feb 2026.pdf"
+# 3. موتور جستجوی هوشمند
+search_term = st.text_input("🔍 جستجو در محصولات (مثلاً: سس، ژامبون، کاله، دارفرش):", placeholder="نام کالا را وارد کنید...")
 
-df = load_pdf_data(PDF_FILE)
+if search_term:
+    # فیلتر کردن هوشمند
+    results = df[df['نام کالا'].str.contains(search_term, case=False, na=False) | 
+                df['دسته'].str.contains(search_term, case=False, na=False)]
+    
+    if not results.empty:
+        # نمایش آمار سریع
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.markdown(f'<div class="metric-box">🔢 تعداد یافت شده<br><b>{len(results)}</b></div>', unsafe_allow_html=True)
+        with c2:
+            st.markdown(f'<div class="metric-box">💰 میانگین قیمت فروش<br><b>{int(results["قیمت فروش"].mean()):,} ریال</b></div>', unsafe_allow_html=True)
+        with c3:
+            st.markdown(f'<div class="metric-box">📈 گران‌ترین کالا<br><b>{results["قیمت فروش"].max():,} ریال</b></div>', unsafe_allow_html=True)
 
-if df is not None:
-    # جستجوی هوشمند
-    search_term = st.text_input("🔍 نام محصول یا برند را وارد کنید (مثلاً: زیتون یا کالباس):")
+        st.write("---")
 
-    if search_term:
-        # فیلتر کردن در تمام ستون‌ها
-        results = df[df.apply(lambda row: row.astype(str).str.contains(search_term, case=False).any(), axis=1)].copy()
+        # نمایش جدول و نمودار
+        col_left, col_right = st.columns([1, 1])
         
-        if not results.empty:
-            st.success(f"✅ {len(results)} مورد پیدا شد.")
-            
-            # نمایش جدول
-            st.dataframe(results, use_container_width=True)
+        with col_left:
+            st.subheader("📋 لیست قیمت مصرف‌کننده")
+            st.dataframe(results[['نام کالا', 'قیمت فروش']], use_container_width=True, hide_index=True)
 
-            # پیدا کردن ستون فروش و رسم نمودار
-            sale_col = [c for c in results.columns if "فروش" in str(c)]
-            if sale_col:
-                s_col = sale_col[0]
-                # تبدیل قیمت به عدد (حذف ویرگول و کاراکترهای اضافه)
-                results[s_col] = pd.to_numeric(results[s_col].astype(str).str.replace(',', '').str.extract('(\d+)')[0], errors='coerce')
-                
-                fig = px.bar(results.dropna(subset=[s_col]), 
-                             x=results.columns[0], y=s_col, 
-                             title="تحلیل قیمت فروش رقبای یافت شده",
-                             color_discrete_sequence=['#ef394e'])
-                st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.warning("موردی یافت نشد.")
-else:
-    st.info("لطفاً مطمئن شوید فایل PDF در مخزن گیت‌هاب آپلود شده است.")
-
-st.write("---")
-st.caption("Solico Strategic Tool | Daily English Practice: 'Search query results'")
+        with col_right:
+            st.subheader("📊 بنچ‌
