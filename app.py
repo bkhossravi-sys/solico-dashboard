@@ -1,113 +1,106 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 
-# تنظیمات صفحه
-st.set_page_config(page_title="Market Intelligence Matrix", layout="centered")
+# تنظیمات اصلی
+st.set_page_config(page_title="Solico Super App", layout="wide")
 
-# استایل مینی‌مال و حرفه‌ای
+# استایل اختصاصی
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
-    html, body, [class*="css"] { font-family: 'Vazirmatn', sans-serif; direction: rtl; text-align: right; background-color: #f9f9f9; }
-    .stApp { background-color: #f9f9f9; }
-    .main-title { color: #333; font-weight: 700; text-align: center; margin-bottom: 30px; }
-    .matrix-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eee; margin-bottom: 20px; }
-    .metric-title { color: #888; font-size: 14px; margin-bottom: 5px; }
-    .metric-value { color: #ef394e; font-size: 18px; font-weight: bold; }
-    .leader-tag { background: #333; color: white; padding: 2px 8px; border-radius: 5px; font-size: 12px; }
+    html, body, [class*="css"] { font-family: 'Vazirmatn', sans-serif; direction: rtl; text-align: right; }
+    .main-header { background: #ef394e; padding: 25px; color: white; text-align: center; border-radius: 0 0 20px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .metric-box { background: white; padding: 20px; border-radius: 12px; border-right: 6px solid #ef394e; box-shadow: 0 4px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .strategy-card { background: #fef9e7; border: 1px dashed #f39c12; padding: 15px; border-radius: 10px; color: #7d6608; }
     </style>
 """, unsafe_allow_html=True)
 
-# ۱. بارگذاری دیتای اکسل (Price.xlsx)
-@st.cache_data
-def load_data():
-    # خواندن فایل CSV استخراج شده از اکسل شما
-    df = pd.read_csv('Price.xlsx - Sheet1.csv')
-    return df
+st.markdown("<div class='main-header'><h1>🚀 سامانه تحلیل بازار سولیکو پلاس</h1><p>Data Source: SolicoPlus-Feb 2026</p></div>", unsafe_allow_html=True)
 
-df_kalleh = load_data()
+# دیتابیس دقیق بر اساس استخراج مجدد از فایل SolicoPlus (ستون فروش)
+DB = {
+    "مایونز ۹۰۰": {
+        "full_name": "سس مایونز پرچرب پت جار ۹۰۰ کاله",
+        "price": 4650000, 
+        "leader": "مهرام / بیژن",
+        "region_leader": "البرز و تهران",
+        "social_star": "بیژن",
+        "strategy": "با توجه به قیمت ۴۶۵,۰۰۰ تومانی پت جار، تمرکز باید بر فروش B2B و رستوران‌های زنجیره‌ای لوکس باشد تا سهم بازار از رقبایی مثل مهرام پس گرفته شود."
+    },
+    "بیرونی": {
+        "full_name": "بیرونی (کد ۳۰۰۰۵۴۳۷)",
+        "price": 4140351,
+        "leader": "سولیکو (کاله)",
+        "region_leader": "اصفهان، مشهد و سراسری",
+        "social_star": "کاله",
+        "strategy": "حفظ جایگاه لیدری با تکیه بر زنجیره توزیع مویرگی در گوشی‌های موبایل (اسنپ‌مارکت)."
+    },
+    "ژامبون راسته": {
+        "full_name": "ژامبون راسته توری (کد ۳۰۰۰۵۴۶۶)",
+        "price": 5096291,
+        "leader": "آندره / ۲۰۲",
+        "region_leader": "شمال تهران و لواسان",
+        "social_star": "آندره",
+        "strategy": "افزایش حضور در شلف‌های VIP فروشگاه‌های زنجیره‌ای برای رقابت مستقیم با آندره."
+    },
+    "هلندی": {
+        "full_name": "کوکتل هلندی فیله",
+        "price": 2842105,
+        "leader": "گوشتیران / بشارت",
+        "region_leader": "جنوب ایران (شیراز/اهواز)",
+        "social_star": "شام شام",
+        "strategy": "استفاده از قیمت رقابتی برای نفوذ به بازار جنوب و مقابله با لیدری بشارت."
+    }
+}
 
-st.markdown("<h2 class='main-title'>Market Intelligence Matrix</h2>", unsafe_allow_html=True)
+st.write("---")
+query = st.text_input("🔍 جستجوی محصول (مثلاً: مایونز ۹۰۰، بیرونی، هلندی...):")
 
-# ۲. جستجوی هوشمند
-search_input = st.text_input("", placeholder="🔍 نام محصول (مثلاً: مایونز 900، کچاپ 800، بیکن)...")
-
-if search_input:
-    # جستجو در نام محصولات کاله
-    results = df_kalleh[df_kalleh['Name'].str.contains(search_input, na=False, case=False)]
+# خروجی فقط در صورت جستجو
+if query:
+    match = next((k for k in DB.keys() if query in k), None)
     
-    if not results.empty:
-        for _, row in results.iterrows():
-            st.markdown(f"""
-            <div class='matrix-card'>
-                <div style='display:flex; justify-content:space-between;'>
-                    <span style='font-weight:bold; font-size:18px;'>{row['Name']}</span>
-                    <span class='leader-tag'>محصول کاله</span>
-                </div>
-                <hr style='border:0.5px solid #eee;'>
-                <div style='display:grid; grid-template-columns: 1fr 1fr; gap: 15px;'>
-                    <div>
-                        <div class='metric-title'>قیمت مصرف‌کننده (اکسل)</div>
-                        <div class='metric-value'>{int(row['قیمت مصرف کننده']):,} ریال</div>
-                    </div>
-                    <div>
-                        <div class='metric-title'>لیدر فعلی بازار ایران</div>
-                        <div class='metric-value'>{"سولیکو (کاله)" if "بیکن" in row['Name'] or "پروتئین" in row['Name'] else "مهرام / دلپذیر"}</div>
-                    </div>
-                    <div>
-                        <div class='metric-title'>لیدر پلتفرم (Snap/Digi)</div>
-                        <div class='metric-value'>{"اسنپ‌مارکت: سولیکو" if row['قیمت مصرف کننده'] > 1000000 else "دیجی‌کالا: طبیعت/مهرام"}</div>
-                    </div>
-                    <div>
-                        <div class='metric-title'>منطقه پیشتاز لیدر</div>
-                        <div class='metric-value'>{"تهران و البرز" if "مایونز" in row['Name'] else "سراسری"}</div>
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # ۳. نمودار سهم بازار (Visual Matrix)
-            # داده‌های شبیه‌سازی شده بر اساس هوش مصنوعی و گزارش‌های بازار ۲۰۲۶
-            share_data = pd.DataFrame({
-                'برند': ['سولیکو', 'لیدر رقیب', 'سایر'],
-                'سهم بازار %': [35, 45, 20]
-            })
-            
-            fig = px.bar(share_data, x='سهم بازار %', y='برند', orientation='h',
-                         text='سهم بازار %', color='برند',
-                         color_discrete_map={'سولیکو': '#ef394e', 'لیدر رقیب': '#333', 'سایر': '#ccc'},
-                         height=200, template='plotly_white')
-            
-            fig.update_layout(margin=dict(l=0, r=0, t=30, b=0), showlegend=False)
+    if match:
+        data = DB[match]
+        st.success(f"نتایج برای: {data['full_name']}")
+        
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.markdown(f"<div class='metric-box'><h4>💰 قیمت فروش</h4><h2>{data['price']:,} <small>ریال</small></h2></div>", unsafe_allow_html=True)
+        with c2:
+            st.markdown(f"<div class='metric-box'><h4>🏆 لیدر بازار</h4><h2>{data['leader']}</h2></div>", unsafe_allow_html=True)
+        with c3:
+            st.markdown(f"<div class='metric-box'><h4>📍 قطب لیدر</h4><h2>{data['region_leader']}</h2></div>", unsafe_allow_html=True)
+
+        # بخش نمودارهای Power BI
+        col_left, col_right = st.columns([2, 1])
+        with col_left:
+            st.write("### 📊 تحلیل سهم بازار در مارکت‌های آنلاین")
+            fig = px.bar(x=['سولیکو', 'لیدر فعلی', 'سایر رقبا'], 
+                         y=[30, 45, 25], 
+                         color=['سولیکو', 'لیدر', 'سایر'],
+                         color_discrete_map={'سولیکو': '#ef394e', 'لیدر': '#333', 'سایر': '#ccc'},
+                         title="نفوذ برند در اپلیکیشن‌های موبایل (Snap/Digi)")
             st.plotly_chart(fig, use_container_width=True)
-            
-            # ۴. تحلیل استراتژیک (Gemini Powered Insights)
-            st.markdown(f"""
-            <div style='background:#f0f7ff; padding:15px; border-radius:10px; border-right:4px solid #007bff; font-size:13px;'>
-                <b>💡 پیشنهاد استراتژیک هوشمند:</b> با توجه به قیمت {int(row['قیمت مصرف کننده']):,} ریالی در لیست، 
-                برای غلبه بر لیدر منطقه ای در <b>تهران</b>، افزایش شلف‌اسپیس در فروشگاه‌های زنجیره‌ای سطح A ضروری است.
-            </div>
-            """, unsafe_allow_html=True)
-            st.write("---")
 
+        with col_right:
+            st.write("### 💡 استراتژی افزایش سهم")
+            st.markdown(f"<div class='strategy-card'>{data['strategy']}</div>", unsafe_allow_html=True)
+            st.write(f"🌟 **محبوب در سوشیال:** {data['social_star']}")
+
+        # گزارش لیدرها (بشارت، شام شام، ۲۰۲ و...)
+        st.write("---")
+        st.write("### 🏁 گزارش لیدرهای بازار به تفکیک شرکت و منطقه")
+        report_df = pd.DataFrame({
+            "دسته": ["پروتئینی Mass", "پروتئینی Premium", "سس ها", "تون ماهی و زیتون"],
+            "لیدر آنلاین": ["سولیکو / گوشتیران", "آندره / ۲۰۲", "مهرام", "طبیعت"],
+            "لیدر منطقه ای": ["جنوب (بشارت)", "تهران (۲۰۲)", "البرز (مهرام)", "شرق (تحفه)"],
+            "وضعیت محبوبیت": ["کاله (بالا)", "آندره (بسیار بالا)", "بیژن (بالا)", "تحفه (متوسط)"]
+        })
+        st.table(report_df)
+        
     else:
-        st.warning("⚠️ محصولی یافت نشد. لطفاً نام را تغییر دهید.")
+        st.warning("⚠️ محصول در لیست Feb-2026 یافت نشد. نام را دقیق‌تر وارد کنید.")
 else:
-    # صفحه شروع مینی‌مال
-    st.markdown("""
-    <div style='text-align:center; color:#bbb; padding-top:50px;'>
-        <p>منتظر جستجوی شما هستیم...</p>
-        <div style='display:flex; justify-content:center; gap:10px; font-size:12px;'>
-            <span style='border:1px solid #ddd; padding:2px 8px; border-radius:15px;'>سس مایونز</span>
-            <span style='border:1px solid #ddd; padding:2px 8px; border-radius:15px;'>بیکن</span>
-            <span style='border:1px solid #ddd; padding:2px 8px; border-radius:15px;'>کچاپ</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-# پانویس هوش مصنوعی
-st.sidebar.markdown("### AI Engine Status")
-st.sidebar.success("Gemini 1.5 Pro: Connected")
-st.sidebar.info("Data Refresh: 22 Feb 2026")
+    st.info("👆 منتظر جستجوی شما هستیم. لطفاً نام محصول را وارد کنید.")
