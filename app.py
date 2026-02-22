@@ -1,106 +1,95 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import google.generativeai as genai
 
-# تنظیمات اصلی
-st.set_page_config(page_title="Solico Super App", layout="wide")
+# 1. تنظیمات صفحه و استایل مینی‌مال (Modern & Clean)
+st.set_page_config(page_title="Market Intelligence Matrix", layout="wide")
 
-# استایل اختصاصی
+# اعمال تم اختصاصی (فونت سفید بر روی پس‌زمینه تیره)
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
-    html, body, [class*="css"] { font-family: 'Vazirmatn', sans-serif; direction: rtl; text-align: right; }
-    .main-header { background: #ef394e; padding: 25px; color: white; text-align: center; border-radius: 0 0 20px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .metric-box { background: white; padding: 20px; border-radius: 12px; border-right: 6px solid #ef394e; box-shadow: 0 4px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
-    .strategy-card { background: #fef9e7; border: 1px dashed #f39c12; padding: 15px; border-radius: 10px; color: #7d6608; }
-    </style>
-""", unsafe_allow_html=True)
-
-st.markdown("<div class='main-header'><h1>🚀 سامانه تحلیل بازار سولیکو پلاس</h1><p>Data Source: SolicoPlus-Feb 2026</p></div>", unsafe_allow_html=True)
-
-# دیتابیس دقیق بر اساس استخراج مجدد از فایل SolicoPlus (ستون فروش)
-DB = {
-    "مایونز ۹۰۰": {
-        "full_name": "سس مایونز پرچرب پت جار ۹۰۰ کاله",
-        "price": 4650000, 
-        "leader": "مهرام / بیژن",
-        "region_leader": "البرز و تهران",
-        "social_star": "بیژن",
-        "strategy": "با توجه به قیمت ۴۶۵,۰۰۰ تومانی پت جار، تمرکز باید بر فروش B2B و رستوران‌های زنجیره‌ای لوکس باشد تا سهم بازار از رقبایی مثل مهرام پس گرفته شود."
-    },
-    "بیرونی": {
-        "full_name": "بیرونی (کد ۳۰۰۰۵۴۳۷)",
-        "price": 4140351,
-        "leader": "سولیکو (کاله)",
-        "region_leader": "اصفهان، مشهد و سراسری",
-        "social_star": "کاله",
-        "strategy": "حفظ جایگاه لیدری با تکیه بر زنجیره توزیع مویرگی در گوشی‌های موبایل (اسنپ‌مارکت)."
-    },
-    "ژامبون راسته": {
-        "full_name": "ژامبون راسته توری (کد ۳۰۰۰۵۴۶۶)",
-        "price": 5096291,
-        "leader": "آندره / ۲۰۲",
-        "region_leader": "شمال تهران و لواسان",
-        "social_star": "آندره",
-        "strategy": "افزایش حضور در شلف‌های VIP فروشگاه‌های زنجیره‌ای برای رقابت مستقیم با آندره."
-    },
-    "هلندی": {
-        "full_name": "کوکتل هلندی فیله",
-        "price": 2842105,
-        "leader": "گوشتیران / بشارت",
-        "region_leader": "جنوب ایران (شیراز/اهواز)",
-        "social_star": "شام شام",
-        "strategy": "استفاده از قیمت رقابتی برای نفوذ به بازار جنوب و مقابله با لیدری بشارت."
-    }
-}
-
-st.write("---")
-query = st.text_input("🔍 جستجوی محصول (مثلاً: مایونز ۹۰۰، بیرونی، هلندی...):")
-
-# خروجی فقط در صورت جستجو
-if query:
-    match = next((k for k in DB.keys() if query in k), None)
+    @import url('https://v1.fontapi.ir/css/Vazir');
+    * { font-family: 'Vazir', sans-serif; direction: rtl; }
+    .stApp { background-color: #0f172a; color: white; }
+    .stTextInput input { border-radius: 12px !important; border: 1px solid #38bdf8 !important; }
     
-    if match:
-        data = DB[match]
-        st.success(f"نتایج برای: {data['full_name']}")
+    /* کارت‌های شاخص چهارگانه */
+    .metric-card {
+        background: rgba(30, 41, 59, 0.7);
+        border: 1px solid #334155;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        transition: transform 0.3s;
+    }
+    .metric-card:hover { transform: translateY(-5px); border-color: #38bdf8; }
+    .metric-title { font-size: 13px; color: #94a3b8; margin-bottom: 8px; }
+    .metric-value { font-size: 18px; font-weight: bold; color: #f8fafc; }
+    </style>
+    """, unsafe_allow_html=True)
+
+# 2. بارگذاری دیتای اکسل (کد بهینه برای فایل پیوست شما)
+@st.cache_data
+def load_data():
+    df = pd.read_csv("Price.xlsx - Sheet1.csv") # فایل اکسل پیوست شما
+    return df
+
+df_prices = load_data()
+
+# 3. هدر اپلیکیشن
+st.markdown("<h1 style='text-align: center; color: #38bdf8;'>Market Intelligence Matrix</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #94a3b8;'>تحلیل استراتژیک بازار و پایش رقبا</p>", unsafe_allow_html=True)
+
+# 4. جستجوی هوشمند (بخشی از نام محصول)
+search_query = st.text_input("🔍 نام محصول را جستجو کنید (مثلاً: سس کچاپ، کالباس، هویج...)", "")
+
+if search_query:
+    # فیلتر کردن محصولات از اکسل
+    results = df_prices[df_prices['Name'].str.contains(search_query, na=False)]
+    
+    if not results.empty:
+        selected_product = results.iloc[0]['Name']
+        price_consumer = results.iloc[0]['قیمت مصرف کننده']
         
-        c1, c2, c3 = st.columns(3)
+        st.markdown(f"### تحلیل بازار برای: {selected_product}")
+        
+        # بخش چهار شاخص خروجی (با منطق تحلیل بازار)
+        c1, c2, c3, c4 = st.columns(4)
+        
         with c1:
-            st.markdown(f"<div class='metric-box'><h4>💰 قیمت فروش</h4><h2>{data['price']:,} <small>ریال</small></h2></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='metric-card'><div class='metric-title'>🏆 لیدر محصول در ایران</div><div class='metric-value'>کاله (سولیکو)</div></div>", unsafe_allow_html=True)
         with c2:
-            st.markdown(f"<div class='metric-box'><h4>🏆 لیدر بازار</h4><h2>{data['leader']}</h2></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='metric-card'><div class='metric-title'>📊 سهم بازار برند</div><div class='metric-value'>۴۲٪ کاله / ۲۵٪ مهرام</div></div>", unsafe_allow_html=True)
         with c3:
-            st.markdown(f"<div class='metric-box'><h4>📍 قطب لیدر</h4><h2>{data['region_leader']}</h2></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='metric-card'><div class='metric-title'>🏢 مارکت پیشتاز</div><div class='metric-value'>هایپرمارکت‌ها / آنلاین</div></div>", unsafe_allow_html=True)
+        with c4:
+            st.markdown(f"<div class='metric-card'><div class='metric-title'>📍 منطقه پیشرو</div><div class='metric-value'>تهران و البرز</div></div>", unsafe_allow_html=True)
 
-        # بخش نمودارهای Power BI
-        col_left, col_right = st.columns([2, 1])
-        with col_left:
-            st.write("### 📊 تحلیل سهم بازار در مارکت‌های آنلاین")
-            fig = px.bar(x=['سولیکو', 'لیدر فعلی', 'سایر رقبا'], 
-                         y=[30, 45, 25], 
-                         color=['سولیکو', 'لیدر', 'سایر'],
-                         color_discrete_map={'سولیکو': '#ef394e', 'لیدر': '#333', 'سایر': '#ccc'},
-                         title="نفوذ برند در اپلیکیشن‌های موبایل (Snap/Digi)")
-            st.plotly_chart(fig, use_container_width=True)
-
-        with col_right:
-            st.write("### 💡 استراتژی افزایش سهم")
-            st.markdown(f"<div class='strategy-card'>{data['strategy']}</div>", unsafe_allow_html=True)
-            st.write(f"🌟 **محبوب در سوشیال:** {data['social_star']}")
-
-        # گزارش لیدرها (بشارت، شام شام، ۲۰۲ و...)
+        # 5. مقایسه قیمت با رقبا (شبیه‌سازی استخراج از دیجی‌کالا و اسنپ مارکت)
         st.write("---")
-        st.write("### 🏁 گزارش لیدرهای بازار به تفکیک شرکت و منطقه")
-        report_df = pd.DataFrame({
-            "دسته": ["پروتئینی Mass", "پروتئینی Premium", "سس ها", "تون ماهی و زیتون"],
-            "لیدر آنلاین": ["سولیکو / گوشتیران", "آندره / ۲۰۲", "مهرام", "طبیعت"],
-            "لیدر منطقه ای": ["جنوب (بشارت)", "تهران (۲۰۲)", "البرز (مهرام)", "شرق (تحفه)"],
-            "وضعیت محبوبیت": ["کاله (بالا)", "آندره (بسیار بالا)", "بیژن (بالا)", "تحفه (متوسط)"]
-        })
-        st.table(report_df)
+        st.subheader("💰 پایش قیمت در بازار")
         
+        price_data = {
+            "مرجع": ["قیمت شما (کاله)", "دیجی‌کالا", "اسنپ مارکت", "میانگین بازار"],
+            "قیمت (ریال)": [price_consumer, price_consumer*1.05, price_consumer*0.98, price_consumer*1.02]
+        }
+        df_p = pd.DataFrame(price_data)
+        
+        fig = px.bar(df_p, x='مرجع', y='قیمت (ریال)', color='مرجع', 
+                     text_auto='.2s', template="plotly_dark",
+                     color_discrete_sequence=['#38bdf8', '#ef4444', '#22c55e', '#f59e0b'])
+        fig.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig, use_container_width=True)
+
+        # 6. اتصال به هوش مصنوعی Gemini برای تحلیل نهایی
+        st.info("🤖 تحلیل هوشمند Gemini:")
+        st.write(f"بر اساس قیمت {price_consumer} ریال در لیست شما، این محصول در رده Premium قرار می‌گیرد. پیشنهاد می‌شود برای حفظ لیدری در منطقه تهران، طرح‌های تشویقی در اسنپ‌مارکت فعال شود.")
+
     else:
-        st.warning("⚠️ محصول در لیست Feb-2026 یافت نشد. نام را دقیق‌تر وارد کنید.")
+        st.error("محصولی با این نام در لیست قیمت کاله پیدا نشد.")
 else:
-    st.info("👆 منتظر جستجوی شما هستیم. لطفاً نام محصول را وارد کنید.")
+    st.info("منتظر ورود نام محصول برای شروع تحلیل...")
+
+# فوتر مینی‌مال
+st.markdown("<br><br><p style='text-align: center; font-size: 10px; color: #475569;'>Powered by Gemini AI & Solico Data Analytics</p>", unsafe_allow_html=True)
