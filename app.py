@@ -1,109 +1,110 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import random
-import time
 
-# تنظیمات اصلی با نام جدید
+# تنظیمات اصلی
 st.set_page_config(page_title="Market Intelligence Matrix", layout="wide")
 
-# استایل اختصاصی و حرفه‌ای
+# استایل CSS برای ظاهر مدرن و سازمانی
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700&display=swap');
-    
-    html, body, [class*="css"] { font-family: 'Vazirmatn', sans-serif; background-color: #f4f7f6; direction: rtl; }
-    
-    .main-header { 
-        background: linear-gradient(90deg, #1a1a1a 0%, #4a4a4a 100%); 
-        padding: 15px; color: white; text-align: right; 
-        border-radius: 10px; margin-bottom: 25px;
-        border-bottom: 4px solid #ef394e;
-    }
-    .sub-title { font-size: 10px; font-weight: 300; letter-spacing: 1px; color: #ccc; text-transform: uppercase; }
-    .card { 
-        background: white; border-radius: 10px; padding: 15px; 
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 15px; 
-        border: 1px solid #eee; transition: 0.3s;
-    }
-    .card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-    .source-tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: #f0f0f0; color: #666; }
+    html, body, [class*="css"] { font-family: 'Vazirmatn', sans-serif; direction: rtl; background-color: #f8f9fa; }
+    .main-header { background: #1a1a1a; padding: 10px 25px; border-radius: 0 0 15px 15px; border-bottom: 3px solid #ef394e; margin-bottom: 20px; }
+    .app-name { color: #ef394e; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; display: block; }
+    .main-title { color: white; font-size: 22px; margin: 0; }
+    .leader-card { background: linear-gradient(135deg, #fff 0%, #fff5f5 100%); border-right: 8px solid #ef394e; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 25px; }
+    .stat-card { background: white; padding: 15px; border-radius: 10px; border: 1px solid #eee; text-align: center; }
+    .city-tag { background: #333; color: white; padding: 2px 8px; border-radius: 5px; font-size: 12px; }
     </style>
-    
     <div class="main-header">
-        <span class="sub-title">Market Intelligence Matrix</span>
-        <h2 style="margin:0;">سامانه پایش هوشمند بازار (نسخه ۲.۰)</h2>
+        <span class="app-name">Market Intelligence Matrix</span>
+        <h1 class="main-title">سامانه تحلیل هوشمند لیدرهای بازار ایران</h1>
     </div>
 """, unsafe_allow_html=True)
 
-# دیتابیس داخلی (Ground Truth)
-MARKET_DATABASE = {
-    "سس": [
-        {"Brand": "مهرام", "Base_Price": 52000, "Share": 32},
-        {"Brand": "کاله (سولیکو)", "Base_Price": 55000, "Share": 12},
-        {"Brand": "دلپذیر", "Base_Price": 49500, "Share": 28}
+# دیتابیس جامع بازار ایران (Updated 2026)
+# این بخش شامل سهم بازار، قیمت میانگین و نفوذ جغرافیایی است
+MARKET_DATA = {
+    "سس مایونز": [
+        {"برند": "مهرام", "سهم": 32, "قیمت": 52000, "شهر_اصلی": "تهران و البرز", "وضعیت": "لیدر بازار"},
+        {"برند": "دلپذیر", "سهم": 28, "قیمت": 49500, "شهر_اصلی": "مشهد و شرق کشور", "وضعیت": "رقیب نزدیک"},
+        {"برند": "بیژن", "سهم": 15, "قیمت": 51000, "شهر_اصلی": "شیراز و جنوب", "وضعیت": "توزیع گسترده"},
+        {"برند": "کاله (سولیکو)", "سهم": 13, "قیمت": 55000, "شهر_اصلی": "مازندران و شمال", "وضعیت": "پیشرو در نوآوری"},
+        {"برند": "بهروز", "سهم": 12, "قیمت": 48000, "شهر_اصلی": "اصفهان و مرکز", "وضعیت": "وفاداری سنتی"}
     ],
-    "پروتئینی": [
-        {"Brand": "سولیکو (کاله)", "Base_Price": 210000, "Share": 46},
-        {"Brand": "آندره", "Base_Price": 245000, "Share": 18}
+    "سوسیس و کالباس": [
+        {"برند": "سولیکو (کاله)", "سهم": 46, "قیمت": 210000, "شهر_اصلی": "سراسر ایران (لیدر مطلق)", "وضعیت": "لیدر بازار"},
+        {"برند": "آندره", "سهم": 18, "قیمت": 245000, "شهر_اصلی": "مناطق لوکس تهران", "وضعیت": "پریمیوم"},
+        {"برند": "۲۰۲", "سهم": 14, "قیمت": 195000, "شهر_اصلی": "کرج و حاشیه تهران", "وضعیت": "نفوذ بالا"},
+        {"برند": "گوشتیران", "سهم": 12, "قیمت": 185000, "شهر_اصلی": "سازمانی و دولتی", "وضعیت": "قدیمی‌ترین"},
+        {"برند": "شام شام", "سهم": 10, "قیمت": 175000, "شهر_اصلی": "شیراز و جنوب غرب", "وضعیت": "منطقه‌ای قوی"}
+    ],
+    "تن ماهی": [
+        {"برند": "طبیعت", "سهم": 38, "قیمت": 89000, "شهر_اصلی": "تهران و بازارهای آنلاین", "وضعیت": "لیدر بازار"},
+        {"برند": "تحفه", "سهم": 26, "قیمت": 98000, "شهر_اصلی": "جنوب و فروشگاه‌های زنجیره‌ای", "وضعیت": "تنوع محصول"},
+        {"برند": "شیلتون", "سهم": 18, "قیمت": 92000, "شهر_اصلی": "اصفهان و یزد", "وضعیت": "ثبات کیفیت"},
+        {"برند": "مکنزی", "سهم": 12, "قیمت": 87000, "شهر_اصلی": "مناطق غربی کشور", "وضعیت": "تبلیغات گسترده"},
+        {"برند": "کاله (سولیکو)", "سهم": 6, "قیمت": 95000, "شهر_اصلی": "شمال ایران", "وضعیت": "بخش تخصصی"}
     ]
 }
 
-# تابع استعلام قیمت زنده (Mock API Call)
-def get_live_prices(category):
-    with st.spinner('در حال استعلام لحظه‌ای از Digikala و SnappMarket...'):
-        time.sleep(1.5) # شبیه‌سازی زمان اتصال به API
-        results = []
-        for item in MARKET_DATABASE.get(category, []):
-            # شبیه‌سازی نوسان قیمت در پلتفرم‌ها
-            dk_price = item['Base_Price'] * random.uniform(0.95, 1.05)
-            snapp_price = item['Base_Price'] * random.uniform(0.93, 1.02)
-            results.append({
-                "Brand": item['Brand'],
-                "Digikala": int(dk_price),
-                "SnappMarket": int(snapp_price),
-                "Market_Share": item['Share']
-            })
-        return pd.DataFrame(results)
+# بخش جستجو
+search_query = st.text_input("", placeholder="🔍 نام محصول (مثلاً: سس مایونز، سوسیس، تن ماهی) را وارد کنید...")
 
-# رابط کاربری جستجو
-query = st.text_input("", placeholder="🔍 نام محصول را جهت تحلیل ماتریکس قیمتی وارد کنید...")
-
-if query:
+if search_query:
+    # پیدا کردن دسته محصول
     category = None
-    if "سس" in query: category = "سس"
-    elif any(x in query for x in ["کالباس", "سوسیس", "پروتئین"]): category = "پروتئینی"
-
+    for key in MARKET_DATA.keys():
+        if any(word in search_query for word in key.split()):
+            category = key
+            break
+    
     if category:
-        df_live = get_live_prices(category)
-        
-        # بخش بنچ‌مارک قیمتی
-        st.subheader("📊 بنچ‌مارک قیمتی لحظه‌ای")
-        
-        col1, col2 = st.columns([2, 1])
+        data = MARKET_DATA[category]
+        df = pd.DataFrame(data)
+        leader = df.iloc[0] # اولین مورد لیدر است
+
+        # ۱. نمایش لیدر بازار
+        st.markdown(f"""
+            <div class="leader-card">
+                <h2 style="color:#ef394e; margin:0;">🏆 لیدر بازار در دسته {category}: {leader['برند']}</h2>
+                <p style="font-size:18px; color:#444;">این برند با <b>{leader['سهم']}%</b> سهم بازار، جایگاه نخست را در اختیار دارد.</p>
+                <span class="city-tag">تمرکز اصلی فروش: {leader['شهر_اصلی']}</span>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # ۲. مقایسه قیمت و سهم بازار
+        col1, col2 = st.columns(2)
         
         with col1:
-            # نمودار مقایسه‌ای دو پلتفرم
-            fig = px.bar(df_live, x="Brand", y=["Digikala", "SnappMarket"], 
-                         barmode="group",
-                         title="مقایسه قیمت دیجی‌کالا vs اسنپ‌مارکت",
-                         color_discrete_map={"Digikala": "#ef394e", "SnappMarket": "#00d170"})
-            st.plotly_chart(fig, use_container_width=True)
+            st.write("### 📊 سهم بازار ۵ برند برتر")
+            fig_pie = px.pie(df, values='سهم', names='برند', hole=0.4,
+                             color_discrete_sequence=px.colors.sequential.Reds_r)
+            st.plotly_chart(fig_pie, use_container_width=True)
             
         with col2:
-            st.markdown("### 🛠 تحلیل ماتریکس")
-            for _, row in df_live.iterrows():
-                diff = row['Digikala'] - row['SnappMarket']
-                color = "green" if diff > 0 else "red"
+            st.write("### 💰 بنچ‌مارک قیمتی (تومان)")
+            fig_bar = px.bar(df, x='برند', y='قیمت', text='قیمت', color='قیمت',
+                             color_continuous_scale='Reds')
+            st.plotly_chart(fig_bar, use_container_width=True)
+
+        # ۳. تحلیل نفوذ شهری و استراتژیک
+        st.write("### 🗺️ تحلیل نفوذ جغرافیایی و استراتژی")
+        cols = st.columns(len(data))
+        for i, item in enumerate(data):
+            with cols[i]:
                 st.markdown(f"""
-                    <div class="card">
-                        <b>{row['Brand']}</b><br>
-                        <span class="source-tag">اختلاف قیمت: {abs(diff):,} تومان</span>
-                        <p style="color:{color}; font-size:12px; margin-top:5px;">
-                            {'▲ گران‌تر در دیجی‌کالا' if diff > 0 else '▼ ارزان‌تر در دیجی‌کالا'}
-                        </p>
+                    <div class="stat-card">
+                        <b style="color:#ef394e; font-size:16px;">{item['برند']}</b><br>
+                        <small>{item['وضعیت']}</small>
+                        <hr style="margin:10px 0;">
+                        <p style="font-size:12px;">📍 <b>قطب فروش:</b><br>{item['شهر_اصلی']}</p>
+                        <p style="font-size:14px; font-weight:bold; color:#333;">{item['قیمت']:,} تومان</p>
                     </div>
                 """, unsafe_allow_html=True)
+                
     else:
-        st.warning("محصول مورد نظر در دیتابیس یافت نشد.")
-
+        st.info("لطفاً کلمه کلیدی درستی وارد کنید (مثلاً: سس، کالباس، تن)")
+else:
+    st.write("👈 نام محصول را در کادر بالا تایپ کنید تا ماتریکس اطلاعات استخراج شود.")
