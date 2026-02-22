@@ -15,7 +15,7 @@ st.markdown("""
     .price-text { color: #ef394e; font-weight: bold; font-size: 20px; }
     </style>
     <div class="header-style">
-        <h2>سامانه تحلیل عمیق بازار ایران (نسخه 2026)</h2>
+        <h2>market intelligence matrix (نسخه 2026)</h2>
         <p>By: behr.khosravi@solico-group.ir</p>
     </div>
 """, unsafe_allow_html=True)
