@@ -2,112 +2,104 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# ۱. تنظیمات ظاهری خفن و فونت‌های حرفه‌ای
-st.set_page_config(page_title="MIM | Market Intelligence Matrix", layout="wide")
+# تنظیمات اصلی صفحه
+st.set_page_config(page_title="Market Intelligence Matrix", layout="wide")
 
+# استایل CSS برای ظاهر مدرن و تم تیره
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@900&display=swap');
     .main { background-color: #0e1117; }
-    .stTitle {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        color: #00d4ff;
-        text-align: center;
-        font-size: 3rem !important;
-        font-weight: 800;
-        text-shadow: 2px 2px 10px rgba(0,212,255,0.3);
-    }
-    .market-header {
-        background: linear-gradient(90deg, #00d4ff 0%, #004e92 100%);
+    .title-text {
+        font-family: 'Roboto', sans-serif;
+        background: linear-gradient(45deg, #00d4ff, #004e92);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-size: 2.5rem;
-        font-weight: bold;
+        font-size: 3.5rem;
+        font-weight: 900;
         text-align: center;
-        margin-bottom: 20px;
+        letter-spacing: 2px;
+        margin-bottom: 0px;
     }
-    div[data-testid="stMetricValue"] { font-size: 1.8rem; color: #00d4ff; }
+    .subtitle-text {
+        color: #808495;
+        text-align: center;
+        font-size: 1.2rem;
+        margin-bottom: 30px;
+    }
     </style>
+    <p class="title-text">MARKET INTELLIGENCE MATRIX</p>
+    <p class="subtitle-text">Strategic Analysis - Esfand 1404</p>
     """, unsafe_allow_html=True)
 
-# ۲. دیتابیس غنی‌شده با کانال‌های توزیع و داده‌های فایل PDF
-# قیمت‌ها بر اساس لیست اسفند ۱۴۰۴ و تصاویر شما تنظیم شده‌اند
-MARKET_DB = {
+# دیتابیس هوشمند بر اساس واقعیت اسفند ۱۴۰۴
+MARKET_DATA = {
     "سس مایونز": {
         "لیدر": "مهرام",
-        "سهم_دسته": "۳۸٪",
+        "سهم_کل": "۳۸٪",
+        "تحلیل": "تسلط کامل مهرام در کانال‌های زنجیره‌ای و خرده‌فروشی مشهود است.",
         "رقیبان": [
-            {"برند": "مهرام", "قیمت": 520000, "تمرکز": "سوپرمارکتی / زنجیره‌ای", "سهم": 35},
-            {"برند": "دلپذیر", "قیمت": 510000, "تمرکز": "زنجیره‌ای / B2B", "سهم": 28},
-            {"برند": "کاله (سولیکو)", "قیمت": 495000, "تمرکز": "مدرن / B2W", "سهم": 15},
-            {"برند": "تبرک", "قیمت": 485000, "تمرکز": "سوپرمارکتی / مناطق حاشیه", "سهم": 12},
-            {"برند": "بیژن", "قیمت": 515000, "تمرکز": "فروشگاه‌های آنلاین / زنجیره‌ای", "سهم": 10}
+            {"برند": "مهرام", "قیمت": 520000, "سهم": 35, "کانال": "زنجیره‌ای / سوپرمارکتی"},
+            {"برند": "دلپذیر", "قیمت": 510000, "سهم": 28, "کانال": "B2B / رستوران‌ها"},
+            {"برند": "بیژن", "قیمت": 515000, "سهم": 12, "کانال": "B2W / آنلاین"},
+            {"برند": "تبرک", "قیمت": 485000, "سهم": 15, "کانال": "سوپرمارکتی / مناطق حاشیه"},
+            {"برند": "کاله", "قیمت": 495000, "سهم": 10, "کانال": "زنجیره‌ای / B2W"}
         ]
     },
-    "ژامبون و پروتئینی": {
+    "پروتئینی (لوکس و عمومی)": {
         "لیدر": "سولیکو (کاله)",
-        "سهم_دسته": "۴۵٪",
+        "سهم_کل": "۴۵٪",
+        "تحلیل": "آندره در بازار پروتئینی‌های لوکس لیدر است، در حالی که سولیکو حجم اصلی زنجیره‌ای را دارد.",
         "رقیبان": [
-            [span_0](start_span){"برند": "سولیکو (کاله)", "قیمت": 2736842, "تمرکز": "زنجیره‌ای / B2W (سراسری)", "سهم": 40}, #[span_0](end_span)
-            {"برند": "آندره", "قیمت": 3100000, "تمرکز": "پروتئینی‌های لوکس / B2B", "sهم": 20},
-            {"برند": "۲۰۲", "قیمت": 2950000, "تمرکز": "سوپرمارکتی / تهران و کرج", "سهم": 15},
-            {"برند": "شام شام", "قیمت": 2600000, "تمرکز": "بخش دولتی / ارگان‌ها", "سهم": 15},
-            {"برند": "میکائیلیان", "قیمت": 4200000, "تمرکز": "تک‌فروشی لوکس (بوتیک پروتئین)", "سهم": 10}
+            {"برند": "سولیکو (کاله)", "قیمت": 2736842, "سهم": 40, "کانال": "زنجیره‌ای / B2W"},
+            {"برند": "آندره", "قیمت": 3150000, "سهم": 20, "کانال": "پروتئینی‌های لوکس / B2B"},
+            {"برند": "۲۰۲", "قیمت": 2980000, "سهم": 15, "کانال": "سوپرمارکتی (تهران)"},
+            {"برند": "میکائیلیان", "قیمت": 4250000, "سهم": 10, "کانال": "B2B لوکس / بوتیک‌ها"},
+            {"برند": "شام شام", "قیمت": 2550000, "سهم": 15, "کانال": "B2B دولتی / سوپرمارکتی"}
         ]
     }
 }
 
-# --- بخش اصلی برنامه ---
-st.markdown('<p class="market-header">MARKET INTELLIGENCE MATRIX</p>', unsafe_allow_html=True)
-st.markdown("---")
-
-# جستجوی هوشمند
-col_search, col_space = st.columns([2, 2])
-with col_search:
-    query = st.selectbox("🎯 انتخاب حوزه تحلیل استراتژیک:", [""] + list(MARKET_DB.keys()))
+# بخش جستجو
+query = st.selectbox("🎯 انتخاب حوزه برای تحلیل عمیق:", [""] + list(MARKET_DATA.keys()))
 
 if query:
-    data = MARKET_DB[query]
+    data = MARKET_DATA[query]
     df = pd.DataFrame(data["رقیبان"])
     
-    # نمایش شاخص‌های کلیدی (Metrics)
+    # نمایش کارت‌های شاخص
     c1, c2, c3 = st.columns(3)
-    c1.metric("لیدر فعلی بازار", data["لیدر"])
-    c2.metric("سهم کل این دسته در بازار", data["سهم_دسته"])
-    c3.metric("میانگین قیمت بازار", f"{int(df['قیمت'].mean()):,}")
+    c1.metric("لیدر بازار", data["لیدر"])
+    c2.metric("سهم بازار دسته", data["سهم_کل"])
+    c3.metric("میانگین قیمت", f"{int(df['قیمت'].mean()):,}")
 
-    st.markdown("### 📊 تحلیل بصری رقبا")
+    # نمودارهای پیشرفته
+    col_left, col_right = st.columns(2)
     
-    col_chart1, col_chart2 = st.columns(2)
-    
-    with col_chart1:
-        # نمودار مقایسه قیمت (Plotly)
-        fig_price = px.bar(df, x='برند', y='قیمت', color='برند', 
-                          title="بنچ‌مارک قیمتی (تومان)",
-                          color_discrete_sequence=px.colors.sequential.Blues_r)
-        fig_price.update_layout(template="plotly_dark")
-        st.plotly_chart(fig_price, use_container_width=True)
+    with col_left:
+        fig_bar = px.bar(df, x='برند', y='قیمت', color='کانال', 
+                         title="شکاف قیمتی و تمرکز کانال فروش",
+                         color_discrete_sequence=px.colors.sequential.Deep)
+        fig_bar.update_layout(template="plotly_dark")
+        st.plotly_chart(fig_bar, use_container_width=True)
 
-    with col_chart2:
-        # نمودار سهم بازار و نفوذ
-        fig_pie = px.pie(df, values='سهم', names='برند', hole=.4,
-                        title="سهم بازار و نفوذ در کانال‌های فروش")
+    with col_right:
+        fig_pie = px.pie(df, values='سهم', names='برند', hole=.4, 
+                         title="توزیع قدرت برندها")
         fig_pie.update_layout(template="plotly_dark")
         st.plotly_chart(fig_pie, use_container_width=True)
 
-    # جدول استراتژیک توزیع
-    st.markdown("### 🏘️ تحلیل کانال‌های نفوذ (Distribution Channels)")
-    
-    # استایل‌دهی به جدول
-    styled_df = df.style.format({"قیمت": "{:,}"}).background_gradient(subset=["سهم"], cmap="Blues")
-    st.table(styled_df)
+    # جدول استراتژیک نهایی
+    st.markdown("### 📋 ماتریس نفوذ در مارکت")
+    st.table(df.style.format({"قیمت": "{:,}"}))
 
-    # تحلیل نهایی جمینای (متصل به دانش اسفند ۱۴۰۴)
-    st.markdown("### 🤖 Strategic Insight (Gemini AI)")
-    st.success(f"""
-    1. **تمرکز کانال توزیع:** برند **{data['لیدر']}** با تسلط بر کانال‌های **B2W** و **زنجیره‌ای** بیشترین رشد را داشته، در حالی که برندی مثل **آندره** یا **میکائیلیان** با تمرکز بر **پروتئینی‌های لوکس و B2B** حاشیه سود خود را حفظ کرده‌اند.
-    2. **تحلیل قیمت:** شکاف قیمتی در بازار {query} نشان می‌دهد که تمایل مشتریان به سمت برندهای با قیمت اقتصادی در کانال‌های **سوپرمارکتی** افزایش یافته است.
-    3. **[span_1](start_span)[span_2](start_span)پیشنهاد استراتژیک:** برای ورود به این بازار، تمرکز بر کانال **B2B (رستوران‌ها و کترینگ‌ها)** با قیمت رقابتی برندهایی مثل کاله، بهینه‌ترین مسیر نفوذ است.[span_1](end_span)[span_2](end_span)
+    # تحلیل هوشمند Gemini
+    st.markdown("---")
+    st.markdown("### 🤖 Strategic Insight (AI)")
+    st.info(f"""
+    1. در دسته {query}، استراتژی برند **{data['لیدر']}** بر نفوذ حداکثری در کانال‌های زنجیره‌ای استوار است.
+    2. برندهایی مثل **آندره** و **میکائیلیان** با حاشیه سود بالاتر در پروتئینی‌های لوکس، بخش B2B ممتاز را قبضه کرده‌اند.
+    3. داده‌های اسفند ۱۴۰۴ نشان می‌دهد که قیمت **{df.loc[df['قیمت'].idxmin(), 'برند']}** رقابتی‌ترین گزینه برای نفوذ در مارکت‌های سوپرمارکتی است.
     """)
-
 else:
-    st.warning("👈 حوزه محصول را برای دریافت ماتریکس تحلیلی انتخاب کنید.")
+    st.write("👈 لطفا یک محصول را انتخاب کنید تا ماتریکس تحلیل ظاهر شود.")
