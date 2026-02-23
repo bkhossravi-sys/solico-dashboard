@@ -1,85 +1,87 @@
 import streamlit as st
 import pandas as pd
 
-# تنظیمات اصلی
+# 1. Page Configuration
 st.set_page_config(page_title="Market Intelligence Matrix", layout="wide")
 
-# استایل‌دهی ساده و ایمن
+# 2. CSS for Professional Look
 st.markdown("""
     <style>
-    .title { color: #00d4ff; font-size: 35px; font-weight: bold; text-align: center; }
-    .stMetric { background-color: #161b22; padding: 15px; border-radius: 10px; }
+    .main { background-color: #0e1117; }
+    .title-text {
+        background: linear-gradient(45deg, #00d4ff, #004e92);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 3rem; font-weight: 900; text-align: center;
+    }
+    .stTable { background-color: #161b22; border-radius: 10px; }
     </style>
-    <div class="title">MARKET INTELLIGENCE MATRIX</div>
+    <p class="title-text">MARKET INTELLIGENCE MATRIX</p>
     """, unsafe_allow_html=True)
 
-# ۱. قیمت‌های استخراج شده از لیست کاله (فوریه ۲۰۲۶)
-[span_0](start_span)#
-KALEH_PRICES = {
-    "ژامبون مرغ دار فرش": 2736842, #[span_0](end_span)
-    [span_1](start_span)"سس مایونز پرچرب دبه": 10158000, #[span_1](end_span)
-    [span_2](start_span)"سس کچاپ ۸۰۰ گرمی": 1250000, #[span_2](end_span)
-    [span_3](start_span)"زیتون پرورده ۲۰۰ گرمی": 1739131, #[span_3](end_span)
-    [span_4](start_span)"سوسیس آلمانی": 4550000 #[span_4](end_span)
-}
-
-# ۲. قیمت‌های بازار برند مهرام (از تصاویر ترب و ایمالز)
-MEHRAM_PRICES = {
-    "سس مایونز ۹۷۰ گرمی": 520000,
-    "سس مایونز ۶۳۰ گرمی": 347000,
-    "سس کتوئی ۲۵۰ سی‌سی": 117000
-}
-
-# ۳. دیتابیس لیدرهای بازار (اسفند ۱۴۰۴)
-LEADERS_DB = {
-    "سس": {
-        "لیدر": "مهرام",
-        "سهم": "۳۸٪",
-        "رقبا": [
-            {"برند": "مهرام", "قیمت": 520000, "کانال": "زنجیره‌ای / سوپرمارکتی"},
-            {"برند": "دلپذیر", "قیمت": 510000, "کانال": "B2B / کترینگ"},
-            {"برند": "کاله (سولیکو)", "قیمت": 10158000, "کانال": "B2W / سازمان‌ها"},
-            {"برند": "تبرک", "قیمت": 485000, "کانال": "سوپرمارکتی / حاشیه"},
-            {"برند": "بیژن", "قیمت": 515000, "کانال": "آنلاین / مدرن"}
+# 3. Data Extraction (Prices from your PDF & Screenshots)
+# Prices for Kalleh/Solico are from your uploaded PDF (Feb 2026)
+# Competitor prices are from your Torob/Emalls screenshots
+SOLICO_DATA = {
+    "sauce": {
+        "leader": "مهرام",
+        "analysis": "در بازار سس، مهرام لیدر توزیع مویرگی است. کاله (سولیکو) در بخش دبه و تامین B2B با قیمت‌های رقابتی نفوذ بالایی دارد.",
+        "products": [
+            [span_2](start_span){"name": "سس مایونز پرچرب دبه (سولیکو)", "price": 10158000, "channel": "B2B / رستوران"}, #[span_2](end_span)
+            {"name": "سس مایونز ۹۷۰ گرمی (مهرام)", "price": 520000, "channel": "زنجیره‌ای / سوپرمارکت"}, # From Screenshot
+            [span_3](start_span){"name": "سس کچاپ ۸۰۰ گرمی (سولیکو)", "price": 1250000, "channel": "زنجیره‌ای / B2W"}, #[span_3](end_span)
+            {"name": "سس مایونز کتوئی ۲۵۰ سی‌سی", "price": 117000, "channel": "آنلاین / رژیمی"}, # From Screenshot
+            [span_4](start_span){"name": "سس خردل دبه (سولیکو)", "price": 22880702, "channel": "B2B / صنعتی"} #[span_4](end_span)
         ]
     },
-    "پروتئینی": {
-        "لیدر": "سولیکو (کاله)",
-        "سهم": "۴۵٪",
-        "رقبا": [
-            {"برند": "سولیکو (کاله)", "قیمت": 2736842, "کانال": "زنجیره‌ای / سراسری"},
-            {"برند": "آندره", "قیمت": 3150000, "کانال": "پروتئینی لوکس / B2B"},
-            {"برند": "۲۰۲", "قیمت": 2980000, "کانال": "سوپرمارکتی پریمیوم"},
-            {"برند": "شام شام", "قیمت": 2550000, "کانال": "B2B دولتی"},
-            {"برند": "میکائیلیان", "قیمت": 4250000, "کانال": "B2B لوکس / اختصاصی"}
+    "protein": {
+        "leader": "سولیکو (کاله)",
+        "analysis": "سولیکو لیدر حجم بازار است. آندره در کانال پروتئینی‌های لوکس و تخصصی لیدر است و قیمت‌های پریمیوم دارد.",
+        "products": [
+            [span_5](start_span){"name": "ژامبون مرغ دار فرش (سولیکو)", "price": 2736842, "channel": "زنجیره‌ای / سراسری"}, #[span_5](end_span)
+            [span_6](start_span){"name": "ژامبون نوروزی (سولیکو)", "price": 5578947, "channel": "B2W / سازمان‌ها"}, #[span_6](end_span)
+            {"name": "آندره (پروتئینی لوکس)", "price": 3150000, "channel": "پروتئینی لوکس / B2B"}, # Market Intelligence
+            [span_7](start_span){"name": "سوسیس آلمانی (سولیکو)", "price": 4550000, "channel": "سوپرمارکتی / اقتصادی"}, #[span_7](end_span)
+            [span_8](start_span){"name": "زیتون پرورده ۲۰۰ گرمی (کاله)", "price": 1739131, "channel": "زنجیره‌ای / سوپرمارکت"} #[span_8](end_span)
         ]
     }
 }
 
-# موتور جستجو
-search = st.text_input("🔍 جستجوی محصول (مثلا: مایونز یا ژامبون):")
+# 4. Search & UI Logic
+query = st.text_input("🔍 جستجوی محصول (مانند: مایونز، ژامبون، سس):").lower()
 
-if search:
-    # تشخیص دسته
-    cat = "سس" if any(x in search for x in ["سس", "مایونز", "کچاپ"]) else "پروتئینی"
-    data = LEADERS_DB[cat]
+if query:
+    # Determine Category
+    category_key = "sauce" if any(x in query for x in ["سس", "مایونز", "کچاپ", "خردل"]) else "protein"
+    selected_data = SOLICO_DATA[category_key]
     
-    # نمایش اطلاعات لیدر (فقط مربوط به دسته جستجو شده)
-    st.markdown(f"### تحلیل بازار {cat}")
+    # 5. Display Analytics based on Category
+    st.markdown(f"### 📊 تحلیل تخصصی بازار {('سس' if category_key == 'sauce' else 'محصولات پروتئینی')}")
+    
     col1, col2 = st.columns(2)
-    col1.metric("لیدر فعلی ایران", data["لیدر"])
-    col2.metric("سهم بازار دسته", data["سهم"])
+    with col1:
+        st.metric("لیدر ایران", selected_data["leader"])
+    with col2:
+        st.metric("وضعیت نفوذ", "B2B & B2W Active")
 
-    # جدول بنچ‌مارک
-    st.markdown("### 📋 بنچ‌مارک قیمت و کانال‌های نفوذ")
-    df_competitors = pd.DataFrame(data["رقبا"])
-    st.table(df_competitors)
+    # 6. Strategic Table
+    df = pd.DataFrame(selected_data["products"])
+    st.table(df.rename(columns={
+        "name": "نام محصول / برند", 
+        "price": "قیمت (ریال/تومان)", 
+        "channel": "کانال نفوذ اصلی"
+    }))
 
-    # تحلیل جمینای (فقط برای دسته مورد نظر)
-    st.markdown("### 🤖 تحلیل استراتژیک اختصاصی")
-    if cat == "سس":
-        st.info("در بازار سس، مهرام لیدر توزیع مویرگی است. کاله در بخش B2W (سازمانی) با دبه ۱۰ کیلویی قیمت مرجع را دارد.")
+    # 7. Gemini Strategic Insight (Category Specific)
+    st.markdown("---")
+    st.markdown("### 🤖 تحلیل استراتژیک جمینای")
+    st.info(selected_data["analysis"])
+    
+    # Extra Insight based on your file
+    if category_key == "protein":
+        [span_9](start_span)st.success("💡 نکته از لیست قیمت: محصولات 'دار فرش' دارای حاشیه سود ۱۲ تا ۱۴ درصد برای عاملین فروش هستند[span_9](end_span).")
     else:
-        st.success("در بازار پروتئینی، آندره در کانال پروتئینی‌های لوکس نفوذ بالایی دارد، اما کاله لیدر حجم در کانال زنجیره‌ای است.")
+        [span_10](start_span)st.success("💡 نکته از لیست قیمت: سس‌های دبه‌ای سولیکو با حاشیه سود ۱۴ درصد، قیمت مرجع بازار B2B محسوب می‌شوند[span_10](end_span).")
+
 else:
-    st.write("لطفاً نام محصول را وارد کنید.")
+    st.warning("👈 نام یک محصول را وارد کنید تا ماتریکس اطلاعات لیدرها و قیمت‌ها نمایش داده شود.")
